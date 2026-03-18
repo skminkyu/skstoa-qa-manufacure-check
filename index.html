@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light" style=""><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>우수화장품 제조 및 품질관리기준(CGMP) 실시상황 평가표</title>
@@ -1632,8 +1633,17 @@
     </div>
 
       <div class="no-print" style="text-align:center; margin-top:30px;">
+  <div class="no-print" style="text-align:center; margin-top:30px;">
   <button onclick="saveToSheet()" style="padding:10px 20px; font-size:14px;">
     저장
+  </button>
+
+  <button onclick="downloadPDF()" style="padding:10px 20px; font-size:14px;">
+    PDF 다운로드
+  </button>
+
+  <button onclick="downloadPDFAndUpload()" style="padding:10px 20px; font-size:14px;">
+    PDF + Drive 저장
   </button>
 </div>
 
@@ -1690,6 +1700,82 @@ function saveToSheet() {
     alert("저장 실패 ❌");
     console.error(err);
   });
+}
+
+          /* =========================
+   PDF 다운로드
+========================= */
+function downloadPDF() {
+
+  const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
+
+  const opt = {
+    margin: 5,
+    filename: company + '_제조사평가.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  html2pdf().set(opt).from(document.body).save();
+}
+
+
+/* =========================
+   PDF + Drive 업로드
+========================= */
+async function downloadPDFAndUpload() {
+
+  const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
+
+  const opt = {
+    margin: 5,
+    filename: company + '_제조사평가.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  const element = document.body;
+
+  // PDF 생성
+  const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+
+  // 다운로드
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(pdfBlob);
+  link.download = opt.filename;
+  link.click();
+
+  // Base64 변환
+  const reader = new FileReader();
+
+  reader.onloadend = function () {
+    const base64data = reader.result.split(',')[1];
+
+    fetch("https://script.google.com/macros/s/AKfycbzZpx5j3lsUJlHO1yfs3fPI6M405KKoTiz_Ns4SH985i0CQELxby2avap6-hHCWAnKo/exec", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        fileName: opt.filename,
+        mimeType: "application/pdf",
+        data: base64data
+      })
+    })
+    .then(res => res.text())
+    .then(res => {
+      console.log(res);
+      alert("Drive 저장 완료 ✅");
+    })
+    .catch(err => {
+      alert("Drive 저장 실패 ❌");
+      console.error(err);
+    });
+  };
+
+  reader.readAsDataURL(pdfBlob);
 }
 </script>
 </body></html>
