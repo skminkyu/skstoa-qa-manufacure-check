@@ -1633,6 +1633,7 @@
 </div>
 
       <script>
+<script>
 function saveToSheet() {
 
   const company = document.querySelector('input[placeholder="업체명 입력"]').value;
@@ -1687,17 +1688,17 @@ function saveToSheet() {
   });
 }
 
-          /* =========================
-   PDF 다운로드
+
+/* =========================
+   PDF 다운로드 (완전 수정)
 ========================= */
 function downloadPDF() {
 
   const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
 
-  const buttonArea = document.querySelector('.no-print');
-
-  // 버튼 숨김
-  if (buttonArea) buttonArea.style.display = "none";
+  // 🔥 모든 버튼 숨김
+  const buttons = document.querySelectorAll('.no-print');
+  buttons.forEach(btn => btn.style.display = "none");
 
   const opt = {
     margin: 5,
@@ -1712,10 +1713,59 @@ function downloadPDF() {
     .from(document.body)
     .save()
     .then(() => {
-      if (buttonArea) buttonArea.style.display = "block";
+      // 🔥 다시 표시
+      buttons.forEach(btn => btn.style.display = "block");
     });
 }
-  const buttonArea = document.querySelector('.no-print');
+
+
+/* =========================
+   주요 부적합 (완전 수정)
+========================= */
+function analyzeMajorIssues() {
+
+  const rows = document.querySelectorAll('.eval-table tbody tr');
+  let issues = [];
+
+  rows.forEach(row => {
+
+    if (row.classList.contains('section-header') ||
+        row.classList.contains('subsection-header') ||
+        row.classList.contains('total-row')) return;
+
+    const item = row.children[1]?.innerText;
+    const maxScore = Number(row.querySelector('.max-score-input')?.value || 0);
+    const score = Number(row.querySelector('.judgment-input')?.value || 0);
+    const remark = row.querySelector('td:last-child input')?.value?.trim();
+
+    if (remark && (maxScore === 3 || score < maxScore)) {
+
+      issues.push({
+        item,
+        remark,
+        priority: maxScore
+      });
+    }
+  });
+
+  issues.sort((a, b) => b.priority - a.priority);
+
+  const list = document.getElementById('major-issues-list');
+  list.innerHTML = "";
+
+  if (issues.length === 0) {
+    list.innerHTML = '<li style="color:#999;">주요 부적합 없음</li>';
+    return;
+  }
+
+  issues.forEach(issue => {
+    const li = document.createElement("li");
+    li.innerHTML = `<b>${issue.item}</b> : ${issue.remark}`;
+    list.appendChild(li);
+  });
+}
+
+      const buttonArea = document.querySelector('.no-print');
 
   // 버튼 숨김
   if (buttonArea) buttonArea.style.display = "none";
@@ -1786,48 +1836,7 @@ function downloadPDF() {
 
   reader.readAsDataURL(pdfBlob);
 }
-function analyzeMajorIssues() {
 
-  const rows = document.querySelectorAll('.eval-table tbody tr');
-  let issues = [];
-
-  rows.forEach(row => {
-
-    if (row.classList.contains('section-header') ||
-        row.classList.contains('subsection-header') ||
-        row.classList.contains('total-row')) return;
-
-    const item = row.children[1]?.innerText;
-    const maxScore = Number(row.querySelector('.max-score-input')?.value || 0);
-    const score = Number(row.querySelector('.judgment-input')?.value || 0);
-    const remark = row.querySelector('td:last-child input')?.value?.trim();
-
-    if (remark && (maxScore === 3 || score < maxScore)) {
-
-      issues.push({
-        item,
-        remark,
-        priority: maxScore
-      });
-    }
-  });
-
-  issues.sort((a, b) => b.priority - a.priority);
-
-  const list = document.getElementById('major-issues-list');
-  list.innerHTML = "";
-
-  if (issues.length === 0) {
-    list.innerHTML = '<li style="color:#999;">주요 부적합 없음</li>';
-    return;
-  }
-
-  issues.forEach(issue => {
-    const li = document.createElement("li");
-    li.innerHTML = `<b>${issue.item}</b> : ${issue.remark}`;
-    list.appendChild(li);
-  });
-}
           
 </script>
 </body></html>
