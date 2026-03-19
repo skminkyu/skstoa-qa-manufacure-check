@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" data-theme="light" style=""><head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>우수화장품 제조 및 품질관리기준(CGMP) 실시상황 평가표</title>
@@ -1750,5 +1751,87 @@
       <div class="nonconformity-title">📋 주요 부적합 사항 (3점 배점 항목 비고 자동 요약)</div>
       <div class="nonconformity-body" id="nc-body"><div class="nonconformity-empty">※ 비고가 기재된 3점 배점 항목이 없습니다.</div></div>
     </div>
+<div class="no-print" style="text-align:center; margin-top:30px;">
+  <button onclick="saveToSheet()" style="padding:10px 20px; font-size:14px; margin-right:10px;">
+    저장
+  </button>
+/* ================================
+   Google Sheets 저장
+================================ */
+function saveToSheet() {
 
+  const company = document.querySelector('input[placeholder="업체명 입력"]').value;
+  const address = document.querySelector('input[placeholder="주소 입력"]').value;
+  const auditor = document.querySelector('input[placeholder="성명 입력"]').value;
+
+  const totalMax = document.getElementById('total-max-score-display').value;
+  const totalScore = document.getElementById('total-obtained-score-display').value;
+  const result = document.getElementById('final-result-text').innerText;
+
+  let items = [];
+
+  document.querySelectorAll('.eval-table tbody tr').forEach(row => {
+
+    if (row.classList.contains('section-header') ||
+        row.classList.contains('subsection-header') ||
+        row.classList.contains('total-row')) return;
+
+    const item = row.children[1]?.innerText;
+    const content = row.children[2]?.innerText;
+    const score = row.querySelector('.judgment-input')?.value;
+    const maxScore = row.querySelector('.max-score-input')?.value;
+
+    if (item) {
+      items.push({
+        item,
+        content,
+        maxScore,
+        score
+      });
+    }
+  });
+
+  const payload = {
+    company,
+    address,
+    auditor,
+    totalMax,
+    totalScore,
+    result,
+    items
+  };
+
+  fetch("https://script.google.com/macros/s/AKfycby0zgnDCwe7YLFRqDoXDpCuDuh3yUmX_kVM-6dQ_PRCrxPHftN2bDTpuMiLE3qvXOXL/exec", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  })
+  .then(() => alert("저장 완료 ✅"))
+  .catch(err => {
+    alert("저장 실패 ❌");
+    console.error(err);
+  });
+}
+
+
+/* ================================
+   PDF 다운로드
+================================ */
+function downloadPDF() {
+
+  const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
+
+  const opt = {
+    margin: 5,
+    filename: company + '_CGMP평가.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  html2pdf().set(opt).from(document.body).save();
+}
+  <button onclick="downloadPDF()" style="padding:10px 20px; font-size:14px;">
+    PDF 저장
+  </button>
+</div>
 </body></html>
