@@ -1624,7 +1624,9 @@
   <button onclick="saveToSheet()" style="padding:10px 20px; font-size:14px;">
     저장
   </button>
+      </div>
 
+  <div class="no-print" style="text-align:center; margin-top:30px;">
   <button onclick="downloadPDF()" style="padding:10px 20px; font-size:14px;">
     PDF 다운로드
   </button>
@@ -1710,7 +1712,6 @@ function downloadPDF() {
     .from(document.body)
     .save()
     .then(() => {
-      // 다시 표시
       if (buttonArea) buttonArea.style.display = "block";
     });
 }
@@ -1733,12 +1734,6 @@ function downloadPDF() {
   });
 }
 }
-
-
-/* =========================
-   PDF + Drive 업로드
-========================= */
-async function downloadPDFAndUpload() {
 
   const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
 
