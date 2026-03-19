@@ -1692,6 +1692,11 @@ function downloadPDF() {
 
   const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
 
+  const buttonArea = document.querySelector('.no-print');
+
+  // 버튼 숨김
+  if (buttonArea) buttonArea.style.display = "none";
+
   const opt = {
     margin: 5,
     filename: company + '_제조사평가.pdf',
@@ -1700,10 +1705,15 @@ function downloadPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
   };
 
-  function downloadPDF() {
-
-  const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
-
+  html2pdf()
+    .set(opt)
+    .from(document.body)
+    .save()
+    .then(() => {
+      // 다시 표시
+      if (buttonArea) buttonArea.style.display = "block";
+    });
+}
   const buttonArea = document.querySelector('.no-print');
 
   // 버튼 숨김
