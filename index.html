@@ -368,6 +368,7 @@
         var resultText = document.getElementById('final-result-text');
         if (resultText) {
           var ratio = totalMax > 0 ? (totalObtained / totalMax) : 0;
+            analyzeMajorIssues();
           if (totalMax === 0) {
             resultText.textContent = '미평가';
             resultText.style.color = 'gray';
@@ -1612,6 +1613,13 @@
       </tbody>
     </table>
 
+      <div id="major-issues-box" style="margin-top:20px; padding:15px; border:2px solid #e53e3e; background:#fff5f5;">
+  <div style="font-weight:bold; color:#c53030;">주요 부적합 사항</div>
+  <ul id="major-issues-list">
+    <li style="color:#999;">자동 분석 결과 없음</li>
+  </ul>
+</div>
+      
       <div class="no-print" style="text-align:center; margin-top:30px;">
   <div class="no-print" style="text-align:center; margin-top:30px;">
   <button onclick="saveToSheet()" style="padding:10px 20px; font-size:14px;">
@@ -1620,10 +1628,6 @@
 
   <button onclick="downloadPDF()" style="padding:10px 20px; font-size:14px;">
     PDF 다운로드
-  </button>
-
-  <button onclick="downloadPDFAndUpload()" style="padding:10px 20px; font-size:14px;">
-    PDF + Drive 저장
   </button>
 </div>
 
@@ -1757,5 +1761,50 @@ async function downloadPDFAndUpload() {
 
   reader.readAsDataURL(pdfBlob);
 }
+function analyzeMajorIssues() {
+
+  const rows = document.querySelectorAll('.eval-table tbody tr');
+  let issues = [];
+
+  rows.forEach(row => {
+
+    if (row.classList.contains('section-header') ||
+        row.classList.contains('subsection-header') ||
+        row.classList.contains('total-row')) return;
+
+    const item = row.children[1]?.innerText;
+    const maxScore = Number(row.querySelector('.max-score-input')?.value || 0);
+    const score = Number(row.querySelector('.judgment-input')?.value || 0);
+    const remark = row.querySelector('td:last-child input')?.value?.trim();
+
+    if (remark && maxScore >= 2 && score < maxScore) {
+
+      const risk = (maxScore - score) / maxScore;
+
+      issues.push({
+        item,
+        remark,
+        risk
+      });
+    }
+  });
+
+  issues.sort((a, b) => b.risk - a.risk);
+
+  const list = document.getElementById('major-issues-list');
+  list.innerHTML = "";
+
+  if (issues.length === 0) {
+    list.innerHTML = '<li style="color:#999;">주요 부적합 없음</li>';
+    return;
+  }
+
+  issues.slice(0, 5).forEach(issue => {
+    const li = document.createElement("li");
+    li.innerHTML = `<b>${issue.item}</b> : ${issue.remark}`;
+    list.appendChild(li);
+  });
+}
+          
 </script>
 </body></html>
