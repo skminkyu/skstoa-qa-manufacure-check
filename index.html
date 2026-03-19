@@ -1621,7 +1621,6 @@
 </div>
       
       <div class="no-print" style="text-align:center; margin-top:30px;">
-  <div class="no-print" style="text-align:center; margin-top:30px;">
   <button onclick="saveToSheet()" style="padding:10px 20px; font-size:14px;">
     저장
   </button>
@@ -1701,7 +1700,28 @@ function downloadPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
   };
 
-  html2pdf().set(opt).from(document.body).save();
+  function downloadPDF() {
+
+  const company = document.querySelector('input[placeholder="업체명 입력"]').value || "CGMP평가";
+
+  const buttonArea = document.querySelector('.no-print');
+
+  // 버튼 숨김
+  if (buttonArea) buttonArea.style.display = "none";
+
+  const opt = {
+    margin: 5,
+    filename: company + '_제조사평가.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, scrollY: 0 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+  };
+
+  html2pdf().set(opt).from(document.body).save().then(() => {
+    // 다시 표시
+    if (buttonArea) buttonArea.style.display = "block";
+  });
+}
 }
 
 
@@ -1777,19 +1797,17 @@ function analyzeMajorIssues() {
     const score = Number(row.querySelector('.judgment-input')?.value || 0);
     const remark = row.querySelector('td:last-child input')?.value?.trim();
 
-    if (remark && maxScore >= 2 && score < maxScore) {
-
-      const risk = (maxScore - score) / maxScore;
+    if (remark && (maxScore === 3 || score < maxScore)) {
 
       issues.push({
         item,
         remark,
-        risk
+        priority: maxScore
       });
     }
   });
 
-  issues.sort((a, b) => b.risk - a.risk);
+  issues.sort((a, b) => b.priority - a.priority);
 
   const list = document.getElementById('major-issues-list');
   list.innerHTML = "";
@@ -1799,7 +1817,7 @@ function analyzeMajorIssues() {
     return;
   }
 
-  issues.slice(0, 5).forEach(issue => {
+  issues.forEach(issue => {
     const li = document.createElement("li");
     li.innerHTML = `<b>${issue.item}</b> : ${issue.remark}`;
     list.appendChild(li);
