@@ -602,14 +602,14 @@ function render(){
                 </select>`
               : `<input value="${ct.유형}" readonly/>`}
           </div>
-          <div class="ff"><label>적 합 여 부</label>
+          ${S.clType!=="haccp_s"?`<div class="ff"><label>적 합 여 부</label>
             <select onchange="setH('적합여부',this.value)">
               <option value="" ${!S.header.적합여부?"selected":""}>자동 계산</option>
               <option value="적합" ${S.header.적합여부==="적합"?"selected":""}>적합</option>
               <option value="부적합" ${S.header.적합여부==="부적합"?"selected":""}>부적합</option>
               <option value="조건부 적합" ${S.header.적합여부==="조건부 적합"?"selected":""}>조건부 적합</option>
             </select>
-          </div>
+          </div>`:""}
         </div>
         <div class="sbar">
           <div class="si"><div class="sv">${scores.total}</div><div class="sl">총 배점</div></div>
@@ -621,7 +621,7 @@ function render(){
             </div>
             <div class="sl">등급</div>
           </div>
-          <div class="si"><span class="sbadge ${badgeCls(displayed)}">${displayed}</span></div>
+          ${S.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(displayed)}">${displayed}</span></div>`:""}
         </div>
       </div>
       <div class="abar">
@@ -640,7 +640,7 @@ function render(){
           ${scores.earned} / ${scores.total}점
           &nbsp;<span class="${gradeCls(grade(scores.earned,scores.total))}" style="font-size:20px;font-weight:700">${grade(scores.earned,scores.total)}</span>
           <span style="font-size:12px;opacity:.8">(${pct(scores.earned,scores.total)}%)</span>
-          &nbsp;<span class="sbadge ${badgeCls(displayed)}" style="font-size:12px">${displayed}</span>
+          ${S.clType!=="haccp_s"?`&nbsp;<span class="sbadge ${badgeCls(displayed)}" style="font-size:12px">${displayed}</span>`:""}
         </span>
       </div>
     </div>`;
@@ -750,7 +750,7 @@ function render(){
               <div class="rscore">
                 <div class="grade-badge ${gradeCls(grade(rec.earned,rec.total,rec.clType))}"><span style="font-size:22px;font-weight:700;line-height:1">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:10px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span></div>
                 <div style="font-size:11px;color:#78909c">${rec.earned}/${rec.total}점</div>
-                <span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>
+                ${rec.clType!=="haccp_s"?`<span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>`:""}
               </div>
               <div style="position:absolute;top:10px;right:12px;display:flex;gap:5px">
               <button class="btn-sm" style="color:#1565c0;border-color:#1565c0" onclick="event.stopPropagation();editRec(${i})">수정</button>
@@ -772,7 +772,7 @@ function render(){
         <div class="htitle">${rt.title}</div>
         <div class="href">${rt.ref}</div>
         <div class="fgrid">
-          ${[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",(rec.clType==="cgmp"||rec.clType==="haccp_g"||rec.clType==="haccp_s")?(rec.header.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":rec.clType==="haccp_g"?"일반 HACCP":"농산물")):rt.유형],["적합여부",rec.header.적합여부||rj]].map(([l,v])=>`
+          ${(rec.clType==="haccp_s"?[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",rec.header.평가유형서브||"농산물"]]:[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",(rec.clType==="cgmp"||rec.clType==="haccp_g")?(rec.header.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":"일반 HACCP")):rt.유형],["적합여부",rec.header.적합여부||rj]]).map(([l,v])=>`
           <div class="ff"><label>${l}</label><div style="padding:7px 10px;background:#f5f5f5;border-radius:7px;font-size:13px;border:1px solid #e0e0e0">${esc(v)}</div></div>`).join("")}
         </div>
         <div class="sbar" style="margin-top:12px">
@@ -785,7 +785,7 @@ function render(){
             </div>
             <div class="sl">등급</div>
           </div>
-          <div class="si"><span class="sbadge ${badgeCls(rec.header.적합여부||rj)}">${rec.header.적합여부||rj}</span></div>
+          ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rec.header.적합여부||rj)}">${rec.header.적합여부||rj}</span></div>`:""}
         </div>
       </div>
       <div class="abar">
@@ -799,7 +799,7 @@ function render(){
       ${renderSummary(rt.data,rec.J)}
       <div class="total-bar">
         <span class="tl">종 합 총 점</span>
-        <span class="tr">${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span> &nbsp;<span class="sbadge ${badgeCls(rec.header.적합여부||rj)}" style="font-size:12px">${rec.header.적합여부||rj}</span></span>
+        <span class="tr">${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span>${rec.clType!=="haccp_s"?` &nbsp;<span class="sbadge ${badgeCls(rec.header.적합여부||rj)}" style="font-size:12px">${rec.header.적합여부||rj}</span>`:""}</span>
       </div>
     </div>`;
   }
