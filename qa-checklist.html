@@ -457,8 +457,20 @@ async function cloudLoad(){
     if(!r.ok){console.warn("cloudLoad error",r.status);return null;}
     const d=await r.json();
     if(!d||d.record===undefined||d.record===null) return null;
-    const arr=Array.isArray(d.record)?d.record:[];
-    /* ★ 성공적으로 불러온 데이터는 즉시 localStorage에 백업 */
+    /* 여러 형식 대응: 직접 배열 / {records:[...]} 래핑 / 객체값 배열 변환 */
+    let arr=null;
+    const raw=d.record;
+    if(Array.isArray(raw)){
+      arr=raw;
+    } else if(raw&&typeof raw==="object"){
+      if(Array.isArray(raw.records)) arr=raw.records;
+      else{
+        const vals=Object.values(raw);
+        if(vals.length>0&&vals.every(v=>v&&typeof v==="object"&&v.id)) arr=vals;
+      }
+    }
+    if(!arr){console.warn("cloudLoad: 알 수 없는 데이터 형식",JSON.stringify(raw).slice(0,200));arr=[];}
+    else console.log("cloudLoad: "+arr.length+"건 로드 완료");
     if(arr.length>0) saveBackup(arr);
     return arr;
   }catch(e){
@@ -681,6 +693,8 @@ function render(){
       <div class="rsub">전체 ${S.records.length}건 · 설정된 JSONBin에 저장된 모든 사용자의 기록</div>
       <div class="abar">
         <button class="btn-refresh" onclick="doRefresh()">🔄 새로고침</button>
+        <button class="btn-refresh" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7" onclick="importBackupJSON()" title="JSON 백업 파일로 복구">📂 JSON 백업으로 복구</button>
+        <input type="file" id="backup-file-input" accept=".json" style="display:none" onchange="handleBackupFile(event)"/>
       </div>
 
       <!-- 검색 필터 박스 -->
@@ -1466,6 +1480,33 @@ function renderEtcSection(J,ro){
     +'<div class="etc-body"><textarea class="etc-textarea" data-etc-text="1" placeholder="기타 사항을 자유롭게 입력하세요...">'+esc(text)+'</textarea></div></div>';
 }
 
+function importBackupJSON(){
+  document.getElementById("backup-file-input").click();
+}
+async function handleBackupFile(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  try{
+    const text=await file.text();
+    const parsed=JSON.parse(text);
+    let records=null;
+    if(Array.isArray(parsed)) records=parsed;
+    else if(parsed&&Array.isArray(parsed.records)) records=parsed.records;
+    if(!records||records.length===0){showToast("⚠️ 유효한 기록이 없는 파일입니다.",false);return;}
+    if(!confirm("JSON 백업에서 "+records.length+"건을 불러와 클라우드에 복구하시겠습니까?\n기존 클라우드 데이터는 덮어씁니다."))return;
+    setLoading(true);
+    const ok=await cloudSave(records);
+    setLoading(false);
+    if(ok){
+      S.records=records; saveBackup(records); render();
+      showToast("✅ JSON 백업 "+records.length+"건을 클라우드에 복구했습니다!");
+    } else {
+      showToast("⚠️ 클라우드 저장 실패. 네트워크를 확인하세요.",false);
+    }
+  }catch(e){showToast("⚠️ 파일 읽기 오류: "+e.message,false);}
+  event.target.value="";
+}
+
 async function doRefresh(){
   if(!isConfigured()){showToast("⚠️ 공유 저장소가 설정되지 않았습니다.",false);return;}
   setLoading(true);
@@ -1477,7 +1518,12 @@ async function doRefresh(){
     const backup=loadBackup();
     if(backup&&backup.length>0){
       S.records=backup; render();
-      showToast("📦 원격 저장소 비어있음 - 로컬 백업 "+backup.length+"건을 표시합니다.");
+      showToast("📦 원격 저장소 비어있음 → 로컬 백업 "+backup.length+"건 복구 중...");
+      setLoading(true);
+      const ok=await cloudSave(backup);
+      setLoading(false);
+      if(ok){ saveBackup(backup); showToast("✅ 로컬 백업 "+backup.length+"건을 클라우드에 복구했습니다!"); }
+      else{ showToast("⚠️ 로컬 백업은 표시되지만 클라우드 재저장 실패. 네트워크를 확인하세요.",false); }
     } else {
       showToast("📭 저장된 기록이 없습니다.");
     }
@@ -1574,11 +1620,15 @@ window.addEventListener('popstate', function(e){
     if(Array.isArray(recs)&&recs.length>0){
       S.records=recs; render();
     } else {
-      /* 원격 실패 또는 빈 bin → localStorage 백업에서 복구 시도 */
+      /* 원격 실패 또는 빈 bin → localStorage 백업에서 복구 후 클라우드에 재저장 */
       const backup=loadBackup();
       if(backup&&backup.length>0){
         S.records=backup; render();
-        showToast("📦 로컬 백업에서 "+backup.length+"건을 복구했습니다.");
+        showToast("📦 로컬 백업 "+backup.length+"건 발견 → 클라우드 복구 중...");
+        cloudSave(backup).then(ok=>{
+          if(ok){ saveBackup(backup); showToast("✅ 로컬 백업 "+backup.length+"건이 클라우드에 복구되었습니다!"); }
+          else{ showToast("⚠️ 로컬 백업을 표시합니다. 클라우드 재저장은 실패했습니다.",false); }
+        });
       }
     }
   }
