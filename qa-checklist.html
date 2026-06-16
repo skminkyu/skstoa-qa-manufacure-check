@@ -183,8 +183,27 @@ tr:hover td{background:#f8f9ff;}
 .etc-body{padding:16px;}
 .etc-textarea{width:100%;min-height:160px;border:1px solid #cfd8dc;border-radius:8px;padding:10px 12px;font-size:13px;font-family:'Noto Sans KR',sans-serif;resize:vertical;outline:none;line-height:1.7;color:#1a1a2e;background:#fff;}
 .etc-textarea:focus{border-color:#0f2547;box-shadow:0 0 0 2px rgba(15,37,71,.08);}
+/* ── 등급 기준표 ── */
+.grade-guide{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.07);border-left:4px solid #0f2547;}
+.grade-guide-title{font-size:12px;font-weight:700;color:#0f2547;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.grade-guide-tables{display:flex;gap:16px;flex-wrap:wrap;}
+.grade-guide-block{flex:1;min-width:200px;}
+.grade-guide-block h4{font-size:11px;font-weight:700;color:#546e7a;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e0e4ea;}
+.grade-guide-block table{width:100%;border-collapse:collapse;font-size:11px;}
+.grade-guide-block th{background:#0f2547;color:#fff;padding:4px 8px;text-align:center;font-weight:600;}
+.grade-guide-block td{padding:4px 8px;border-bottom:1px solid #f0f2f5;text-align:center;}
+.grade-guide-block tr:last-child td{border-bottom:none;}
+.gg-s{color:#7B1FA2;font-weight:800;font-size:13px;}
+.gg-a{color:#1565c0;font-weight:800;font-size:13px;}
+.gg-b{color:#2e7d32;font-weight:800;font-size:13px;}
+.gg-c{color:#f57f17;font-weight:800;font-size:13px;}
+.gg-d{color:#c62828;font-weight:800;font-size:13px;}
+.gg-ok{background:#e8f5e9;color:#2e7d32;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;}
+.gg-cond{background:#fff8e1;color:#f57f17;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;}
+.gg-ng{background:#ffebee;color:#c62828;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;}
+
 @media print{
-  .topbar,.abar,.shared-notice,.modal-bg,button,.modal{display:none!important;}
+  .topbar,.abar,.shared-notice,.modal-bg,button,.modal,.grade-guide{display:none!important;}
   body{background:#fff;}
   .scard{page-break-inside:avoid;box-shadow:none;border:1px solid #ddd;}
   .shead{background:#0f2547!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -410,6 +429,69 @@ function judge(e,t,type){
   return"부적합";
 }
 function today(){return new Date().toISOString().slice(0,10);}
+function renderGradeGuide(clType){
+  if(clType==="cgmp"){
+    return`<div class="grade-guide">
+      <div class="grade-guide-title">📊 등급별 점수 및 판정 기준 <span style="font-size:10px;font-weight:400;color:#90a4ae">(화면 전용 · PDF 미출력)</span></div>
+      <div class="grade-guide-tables">
+        <div class="grade-guide-block">
+          <h4>💄 화장품 제조업소 (CGMP) — 만점 96점</h4>
+          <table>
+            <thead><tr><th>등급</th><th>점수 범위</th><th>판정</th></tr></thead>
+            <tbody>
+              <tr><td><span class="gg-s">S</span></td><td>90 ~ 96점 (94%~)</td><td><span class="gg-ok">적합</span></td></tr>
+              <tr><td><span class="gg-a">A</span></td><td>80 ~ 89점 (84%~)</td><td><span class="gg-cond">조건부 적합</span></td></tr>
+              <tr><td><span class="gg-b">B</span></td><td>71 ~ 79점 (74%~)</td><td><span class="gg-cond">조건부 적합</span></td></tr>
+              <tr><td><span class="gg-c">C</span></td><td>61 ~ 70점 (64%~)</td><td><span class="gg-cond">조건부 적합</span></td></tr>
+              <tr><td><span class="gg-d">D</span></td><td>60점 이하 (~63%)</td><td><span class="gg-ng">부적합</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(clType==="haccp_g"){
+    return`<div class="grade-guide">
+      <div class="grade-guide-title">📊 등급별 점수 및 판정 기준 <span style="font-size:10px;font-weight:400;color:#90a4ae">(화면 전용 · PDF 미출력)</span></div>
+      <div class="grade-guide-tables">
+        <div class="grade-guide-block">
+          <h4>🍱 식품 제조·가공업 (HACCP) — 만점 115점</h4>
+          <table>
+            <thead><tr><th>등급</th><th>점수 범위</th><th>판정</th></tr></thead>
+            <tbody>
+              <tr><td><span class="gg-s">S</span></td><td>104 ~ 115점 (90%~)</td><td><span class="gg-ok">적합</span></td></tr>
+              <tr><td><span class="gg-a">A</span></td><td>92 ~ 103점 (80%~)</td><td><span class="gg-cond">조건부 적합</span></td></tr>
+              <tr><td><span class="gg-b">B</span></td><td>81 ~ 91점 (70%~)</td><td><span class="gg-cond">조건부 적합</span></td></tr>
+              <tr><td><span class="gg-c">C</span></td><td>69 ~ 80점 (60%~)</td><td><span class="gg-cond">조건부 적합</span></td></tr>
+              <tr><td><span class="gg-d">D</span></td><td>68점 이하 (~59%)</td><td><span class="gg-ng">부적합</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(clType==="haccp_s"){
+    return`<div class="grade-guide">
+      <div class="grade-guide-title">📊 등급별 점수 및 판정 기준 <span style="font-size:10px;font-weight:400;color:#90a4ae">(화면 전용 · PDF 미출력)</span></div>
+      <div class="grade-guide-tables">
+        <div class="grade-guide-block">
+          <h4>🥘 농·축·수산물 취급업소 — 만점 33점 (용수 N/A 시 30점)</h4>
+          <table>
+            <thead><tr><th>등급</th><th>만점 33점</th><th>만점 30점 (용수 N/A)</th></tr></thead>
+            <tbody>
+              <tr><td><span class="gg-s">S</span></td><td>30 ~ 33점</td><td>27 ~ 30점</td></tr>
+              <tr><td><span class="gg-a">A</span></td><td>26 ~ 29점</td><td>24 ~ 26점</td></tr>
+              <tr><td><span class="gg-b">B</span></td><td>23 ~ 25점</td><td>21 ~ 23점</td></tr>
+              <tr><td><span class="gg-c">C</span></td><td>20 ~ 22점</td><td>18 ~ 20점</td></tr>
+              <tr><td><span class="gg-d">D</span></td><td>19점 이하</td><td>17점 이하</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }
+  return"";
+}
 function badgeCls(j){return j==="적합"?"ok":j==="부적합"?"ng":"cond";}
 function esc(s){if(s===undefined||s===null)return"";return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
 
@@ -654,6 +736,7 @@ function render(){
         <button class="btn btn-ol" onclick="goHome()">← 돌아가기</button>
         ${S.editIdx!==null?`<span style="font-size:11px;color:#e65100;padding:5px 0">📝 수정 중</span>`:""}
       </div>
+      ${renderGradeGuide(S.clType)}
       ${ct.data.map(sec=>renderSection(sec,S.J,false,ct.배점모드)).join("")}
       ${renderEtcSection(S.J,false)}
       ${renderSummary(ct.data,S.J)}
@@ -819,6 +902,7 @@ function render(){
         <button class="btn btn-ol" style="border-color:#2e7d32;color:#2e7d32" onclick="exportRecordToExcel(S.selRec)">📊 Excel</button>
         <button class="btn btn-ol" onclick="goRecords()">← 목록으로</button>
       </div>
+      ${renderGradeGuide(rec.clType)}
       ${rt.data.map(sec=>renderSection(sec,rec.J,true,rt.배점모드)).join("")}
       ${renderEtcSection(rec.J,true)}
       ${renderSummary(rt.data,rec.J)}
