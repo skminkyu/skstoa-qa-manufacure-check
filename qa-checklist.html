@@ -628,7 +628,7 @@ function render(){
           <div class="si"><div class="sv">${scores.earned}</div><div class="sl">취득 점수</div></div>
           <div class="si">
             <div class="grade-badge ${gradeCls(grade(scores.earned,scores.total,S.clType))}">
-              <span class="grade-letter">${grade(scores.earned,scores.total)}</span>
+              <span class="grade-letter">${grade(scores.earned,scores.total,S.clType)}</span>
               <span class="grade-pct">(${pct(scores.earned,scores.total)}%)</span>
             </div>
             <div class="sl">등급</div>
@@ -650,7 +650,7 @@ function render(){
         <span class="tl">종 합 총 점</span>
         <span class="tr">
           ${scores.earned} / ${scores.total}점
-          &nbsp;<span class="${gradeCls(grade(scores.earned,scores.total))}" style="font-size:20px;font-weight:700">${grade(scores.earned,scores.total)}</span>
+          &nbsp;<span class="${gradeCls(grade(scores.earned,scores.total,S.clType))}" style="font-size:20px;font-weight:700">${grade(scores.earned,scores.total,S.clType)}</span>
           <span style="font-size:12px;opacity:.8">(${pct(scores.earned,scores.total)}%)</span>
           ${S.clType!=="haccp_s"?`&nbsp;<span class="sbadge ${badgeCls(displayed)}" style="font-size:12px">${displayed}</span>`:""}
         </span>
