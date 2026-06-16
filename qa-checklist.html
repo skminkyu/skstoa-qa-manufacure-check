@@ -642,7 +642,7 @@ function render(){
   const ct=S.clType?TYPES[S.clType]:null;
   const scores=ct?calcScores(ct.data,S.J):{total:0,earned:0};
   const jd=scores.total>0?judge(scores.earned,scores.total,S.clType):"-";
-  const displayed=S.header.적합여부||jd;
+  const displayed=jd; /* 항상 점수 기반 자동 계산 */
   const configured=isConfigured();
 
   let html=`
@@ -757,7 +757,7 @@ function render(){
     /* 검색 필터 적용 */
     const filtered=S.records.filter((rec,i)=>{
       const rj=judge(rec.earned,rec.total,rec.clType);
-      const result=rec.header.적합여부||rj;
+      const result=rj;
       const sh=S.search;
       if(sh.업소명&&!((rec.header.업소명||"").includes(sh.업소명))) return false;
       if(sh.심사자&&!((rec.header.심사자||"").includes(sh.심사자))) return false;
@@ -770,7 +770,7 @@ function render(){
     const filteredIdx=S.records.map((rec,i)=>i).filter(i=>{
       const rec=S.records[i];
       const rj=judge(rec.earned,rec.total,rec.clType);
-      const result=rec.header.적합여부||rj;
+      const result=rj;
       const sh=S.search;
       if(sh.업소명&&!((rec.header.업소명||"").includes(sh.업소명))) return false;
       if(sh.심사자&&!((rec.header.심사자||"").includes(sh.심사자))) return false;
@@ -847,7 +847,7 @@ function render(){
             const rec=S.records[i];
             const rj=judge(rec.earned,rec.total,rec.clType);
             const icon=rec.clType==="cgmp"?"💄":rec.clType==="haccp_g"?"🍱":"🥘";
-            const resultVal=rec.header.적합여부||rj;
+            const resultVal=rj;
             return `<div class="rcard" onclick="viewRec(${i})">
               <div style="font-size:26px">${icon}</div>
               <div class="rmeta">
@@ -880,7 +880,7 @@ function render(){
         <div class="htitle">${rt.title}</div>
         <div class="href">${rt.ref}</div>
         <div class="fgrid">
-          ${(rec.clType==="haccp_s"?[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",rec.header.평가유형서브||"농산물"]]:[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",(rec.clType==="cgmp"||rec.clType==="haccp_g")?(rec.header.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":"일반 HACCP")):rt.유형],["적합여부",rec.header.적합여부||rj]]).map(([l,v])=>`
+          ${(rec.clType==="haccp_s"?[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",rec.header.평가유형서브||"농산물"]]:[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",(rec.clType==="cgmp"||rec.clType==="haccp_g")?(rec.header.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":"일반 HACCP")):rt.유형],["적합여부",rj]]).map(([l,v])=>`
           <div class="ff"><label>${l}</label><div style="padding:7px 10px;background:#f5f5f5;border-radius:7px;font-size:13px;border:1px solid #e0e0e0">${esc(v)}</div></div>`).join("")}
         </div>
         <div class="sbar" style="margin-top:12px">
@@ -893,7 +893,7 @@ function render(){
             </div>
             <div class="sl">등급</div>
           </div>
-          ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rec.header.적합여부||rj)}">${rec.header.적합여부||rj}</span></div>`:""}
+          ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rj)}">${rj}</span></div>`:""}
         </div>
         ${renderGradeGuide(rec.clType)}
       </div>
@@ -908,7 +908,7 @@ function render(){
       ${renderSummary(rt.data,rec.J)}
       <div class="total-bar">
         <span class="tl">종 합 총 점</span>
-        <span class="tr">${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span>${rec.clType!=="haccp_s"?` &nbsp;<span class="sbadge ${badgeCls(rec.header.적합여부||rj)}" style="font-size:12px">${rec.header.적합여부||rj}</span>`:""}</span>
+        <span class="tr">${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span>${rec.clType!=="haccp_s"?` &nbsp;<span class="sbadge ${badgeCls(rj)}" style="font-size:12px">${rj}</span>`:""}</span>
       </div>
     </div>`;
   }
@@ -1243,7 +1243,7 @@ function renderFilteredList(){
   const filteredIdx=S.records.map((_,i)=>i).filter(i=>{
     const rec=S.records[i];
     const rj=judge(rec.earned,rec.total,rec.clType);
-    const result=rec.header.적합여부||rj;
+    const result=rj;
     const sh=S.search;
     if(sh.업소명&&!((rec.header.업소명||"").includes(sh.업소명))) return false;
     if(sh.심사자&&!((rec.header.심사자||"").includes(sh.심사자))) return false;
@@ -1265,7 +1265,7 @@ function renderFilteredList(){
       const rec=S.records[i];
       const rj=judge(rec.earned,rec.total,rec.clType);
       const icon=rec.clType==="cgmp"?"💄":rec.clType==="haccp_g"?"🍱":"🥘";
-      const resultVal=rec.header.적합여부||rj;
+      const resultVal=rj;
       return `<div class="rcard" onclick="viewRec(${i})">
         <div style="font-size:26px">${icon}</div>
         <div class="rmeta">
