@@ -393,8 +393,19 @@ function gradeCls(g){
 }
 function judge(e,t,type){
   if(!t)return"-";
-  if(e===t)return"적합";
+  if(type==="cgmp"){
+    if(e>=90)return"적합";
+    if(e>=61)return"조건부 적합";
+    return"부적합";
+  }
+  if(type==="haccp_g"){
+    if(e>=104)return"적합";
+    if(e>=69)return"조건부 적합";
+    return"부적합";
+  }
+  /* haccp_s는 적합여부 미사용, 기타 타입 기본값 */
   const p=(e/t)*100;
+  if(p>=90)return"적합";
   if(p>=70)return"조건부 적합";
   return"부적합";
 }
