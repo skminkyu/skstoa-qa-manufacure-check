@@ -728,6 +728,7 @@ function render(){
           </div>
           ${S.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(displayed)}">${displayed}</span></div>`:""}
         </div>
+        ${renderGradeGuide(S.clType)}
       </div>
       <div class="abar">
         <button class="btn btn-dark" onclick="doSave()">${S.editIdx!==null?"✏️ 수정 저장":"💾 저장 (공유)"}</button>
@@ -736,7 +737,6 @@ function render(){
         <button class="btn btn-ol" onclick="goHome()">← 돌아가기</button>
         ${S.editIdx!==null?`<span style="font-size:11px;color:#e65100;padding:5px 0">📝 수정 중</span>`:""}
       </div>
-      ${renderGradeGuide(S.clType)}
       ${ct.data.map(sec=>renderSection(sec,S.J,false,ct.배점모드)).join("")}
       ${renderEtcSection(S.J,false)}
       ${renderSummary(ct.data,S.J)}
@@ -895,6 +895,7 @@ function render(){
           </div>
           ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rec.header.적합여부||rj)}">${rec.header.적합여부||rj}</span></div>`:""}
         </div>
+        ${renderGradeGuide(rec.clType)}
       </div>
       <div class="abar">
         <button class="btn btn-dark" onclick="editRec(S.selRecIdx)">✏️ 수정</button>
@@ -902,7 +903,6 @@ function render(){
         <button class="btn btn-ol" style="border-color:#2e7d32;color:#2e7d32" onclick="exportRecordToExcel(S.selRec)">📊 Excel</button>
         <button class="btn btn-ol" onclick="goRecords()">← 목록으로</button>
       </div>
-      ${renderGradeGuide(rec.clType)}
       ${rt.data.map(sec=>renderSection(sec,rec.J,true,rt.배점모드)).join("")}
       ${renderEtcSection(rec.J,true)}
       ${renderSummary(rt.data,rec.J)}
