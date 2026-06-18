@@ -861,11 +861,11 @@ function render(){
                 <div class="grade-badge ${gradeCls(grade(rec.earned,rec.total,rec.clType))}"><span style="font-size:22px;font-weight:700;line-height:1">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:10px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span></div>
                 <div style="font-size:11px;color:#78909c">${rec.earned}/${rec.total}점</div>
                 ${rec.clType!=="haccp_s"?`<span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>`:""}
+                <div style="display:flex;gap:5px;margin-top:8px;justify-content:flex-end">
+                  <button class="btn-sm" style="color:#1565c0;border-color:#1565c0;position:static" onclick="event.stopPropagation();editRec(${i})">수정</button>
+                  <button class="btn-sm" style="position:static" onclick="event.stopPropagation();delRec(${i})">삭제</button>
+                </div>
               </div>
-              <div style="position:absolute;top:10px;right:12px;display:flex;gap:5px">
-              <button class="btn-sm" style="color:#1565c0;border-color:#1565c0" onclick="event.stopPropagation();editRec(${i})">수정</button>
-              <button class="btn-sm" onclick="event.stopPropagation();delRec(${i})">삭제</button>
-            </div>
             </div>`;
           }).join("")}
       </div>
