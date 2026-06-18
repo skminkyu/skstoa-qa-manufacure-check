@@ -1178,7 +1178,7 @@ function saveAllInputs(){
 /* ════════════════════════════════════════
    사진 업로드
 ════════════════════════════════════════ */
-const MAX_PHOTOS=5;
+const MAX_PHOTOS=10;
 
 function compressImage(file,maxW,maxH,quality){
   return new Promise(function(resolve){
@@ -1209,7 +1209,7 @@ async function handlePhotoUpload(input){
     var f=files[i];
     if(!f.type.startsWith('image/')){showToast('이미지 파일만 업로드할 수 있습니다.',false);continue;}
     try{
-      var b64=await compressImage(f,1200,1200,0.7);
+      var b64=await compressImage(f,800,800,0.6);
       if(!S.photos)S.photos=[];
       S.photos.push({data:b64,caption:''});
     }catch(e){showToast('이미지 처리 중 오류가 발생했습니다.',false);}
