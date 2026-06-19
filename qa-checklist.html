@@ -602,6 +602,13 @@ async function cloudSave(records){
   }
   if(!isConfigured())return false;
   try{
+    const body=JSON.stringify(records);
+    /* JSONBin 1MB 한도 사전 체크 (여유분 포함 900KB) */
+    if(body.length>900*1024){
+      const kb=Math.round(body.length/1024);
+      showToast("⚠️ 저장 용량 초과 ("+kb+"KB / 최대 900KB). 첨부 사진 수를 줄여주세요.",false);
+      return false;
+    }
     /* 8초 타임아웃 - JSONBin 접속 불가 시 무한 대기 방지 */
     const ctrl=new AbortController();
     const timer=setTimeout(()=>ctrl.abort(),8000);
@@ -610,10 +617,14 @@ async function cloudSave(records){
       r=await fetch("https://api.jsonbin.io/v3/b/"+cfg.binId,{
         method:"PUT",
         headers:{"Content-Type":"application/json","X-Master-Key":cfg.masterKey},
-        body:JSON.stringify(records),
+        body:body,
         signal:ctrl.signal
       });
     }finally{clearTimeout(timer);}
+    if(!r.ok){
+      if(r.status===413) showToast("⚠️ 저장 용량 초과 (JSONBin 한도 초과). 첨부 사진 수를 줄여주세요.",false);
+      else console.warn("cloudSave HTTP",r.status);
+    }
     return r.ok;
   }catch(e){
     if(e.name==="AbortError"){
@@ -1361,9 +1372,12 @@ async function doSave(){
 
     const ok=await cloudSave(newRecs);
     if(!ok){
+      /* 용량 초과는 이미 토스트 표시됨 — 재시도 없이 즉시 종료 */
+      const bodySize=JSON.stringify(newRecs).length;
+      if(bodySize>900*1024){setLoading(false);return;}
       if(attempt<3){ await new Promise(r=>setTimeout(r,1000*attempt)); continue; }
       setLoading(false);
-      showToast("⚠️ 저장 실패. Master Key와 Bin ID를 확인해주세요.",false);
+      showToast("⚠️ 저장 실패. 네트워크 또는 JSONBin 연결을 확인해주세요.",false);
       return;
     }
 
