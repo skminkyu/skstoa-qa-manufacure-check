@@ -223,6 +223,16 @@ tr:hover td{background:#f8f9ff;}
   .scard{page-break-inside:avoid;box-shadow:none;border:1px solid #ddd;}
   .shead{background:#0f2547!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .total-bar{background:#0f2547!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  /* 판정 드롭다운: 선택된 값만 텍스트로 표시 */
+  select.sinput{-webkit-appearance:none;appearance:none;border:none!important;background:transparent!important;padding:0!important;font-size:12px;font-weight:600;color:#0f2547;width:auto!important;}
+  /* 배점 표시 (노란 배경 제거) */
+  .sinput.bp{background:transparent!important;border:none!important;padding:0!important;font-size:12px;font-weight:700;color:#0f2547;}
+  /* 비고 textarea: 내용 그대로 텍스트 출력, 잘림 없음 */
+  textarea.noteinput{border:none!important;background:transparent!important;padding:0!important;resize:none!important;overflow:visible!important;height:auto!important;min-height:0!important;white-space:pre-wrap;word-break:break-all;font-size:11px;color:#37474f;}
+  /* 테이블 셀 줄바꿈 허용 */
+  td{word-break:break-word;white-space:normal;}
+  .c비고{width:20%;}
+  /* 사진 출력 */
   .photo-print-section{display:block!important;page-break-before:always;}
   .photo-print-title{font-size:14px;font-weight:700;color:#0f2547;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #0f2547;}
   .photo-print-grid{display:flex;flex-wrap:wrap;gap:12px;}
