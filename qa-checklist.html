@@ -615,10 +615,10 @@ async function cloudSave(records){
   if(!isConfigured())return false;
   try{
     const body=JSON.stringify(records);
-    /* JSONBin 1MB 한도 사전 체크 (여유분 포함 900KB) */
-    if(body.length>900*1024){
+    /* JSONBin 한도 사전 체크 (500KB) */
+    if(body.length>500*1024){
       const kb=Math.round(body.length/1024);
-      showToast("⚠️ 저장 용량 초과 ("+kb+"KB / 최대 900KB). 첨부 사진 수를 줄여주세요.",false);
+      showToast("⚠️ 저장 용량 초과 ("+kb+"KB / 최대 500KB). 첨부 사진 수를 줄여주세요.",false);
       return false;
     }
     /* 8초 타임아웃 - JSONBin 접속 불가 시 무한 대기 방지 */
@@ -1227,7 +1227,7 @@ async function handlePhotoUpload(input){
     var f=files[i];
     if(!f.type.startsWith('image/')){showToast('이미지 파일만 업로드할 수 있습니다.',false);continue;}
     try{
-      var b64=await compressImage(f,800,800,0.6);
+      var b64=await compressImage(f,600,600,0.45);
       if(!S.photos)S.photos=[];
       S.photos.push({data:b64,caption:''});
     }catch(e){showToast('이미지 처리 중 오류가 발생했습니다.',false);}
@@ -1265,12 +1265,15 @@ function renderPhotoSection(photos,readOnly){
       :'<div class="photo-section"><div class="photo-section-title">📷 첨부 사진 <span class="photo-count">'+list.length+'장</span></div>'+grid+'</div>';
   }
 
+  var photoKb=Math.round(list.reduce(function(a,p){return a+(p.data?p.data.length:0);},0)/1024);
+  var sizeColor=photoKb>300?'#c62828':photoKb>150?'#e65100':'#2e7d32';
   var notice='<div class="photo-notice">'
     +'⚠️ <strong>이미지 업로드 유의사항</strong><br>'
     +'• 최대 <strong>'+MAX_PHOTOS+'장</strong>까지 업로드 가능합니다.<br>'
     +'• 지원 형식: <strong>JPG, PNG, GIF, WEBP</strong> 등 이미지 파일<br>'
-    +'• 업로드 후 자동으로 <strong>최대 800px / JPEG 60%</strong>로 압축되며, 압축 후 장당 약 <strong>50~120KB</strong> 수준입니다.<br>'
-    +'• 전체 저장 용량이 <strong>900KB</strong>를 초과하면 저장이 제한될 수 있습니다. 사진 수를 줄여 저장해주세요.'
+    +'• 업로드 후 자동으로 <strong>최대 600px / JPEG 45%</strong>로 압축됩니다.<br>'
+    +'• 전체 저장 용량이 <strong>500KB</strong>를 초과하면 저장이 제한됩니다. 사진 수를 줄여주세요.'
+    +(list.length>0?'<br>• 현재 사진 용량: <strong style="color:'+sizeColor+'">'+photoKb+'KB</strong>':'')
     +'</div>';
 
   return '<div class="photo-section">'
@@ -1395,7 +1398,7 @@ async function doSave(){
     if(!ok){
       /* 용량 초과는 이미 토스트 표시됨 — 재시도 없이 즉시 종료 */
       const bodySize=JSON.stringify(newRecs).length;
-      if(bodySize>900*1024){setLoading(false);return;}
+      if(bodySize>500*1024){setLoading(false);return;}
       if(attempt<3){ await new Promise(r=>setTimeout(r,1000*attempt)); continue; }
       setLoading(false);
       showToast("⚠️ 저장 실패. 네트워크 또는 JSONBin 연결을 확인해주세요.",false);
