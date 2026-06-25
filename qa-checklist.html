@@ -634,8 +634,16 @@ async function cloudSave(records){
       });
     }finally{clearTimeout(timer);}
     if(!r.ok){
-      if(r.status===413) showToast("⚠️ 저장 용량 초과 (JSONBin 한도 초과). 첨부 사진 수를 줄여주세요.",false);
-      else console.warn("cloudSave HTTP",r.status);
+      let reason="";
+      try{const j=await r.json();reason=j.message||j.error||JSON.stringify(j);}catch(_){}
+      if(r.status===403){
+        showToast("⚠️ JSONBin 접근 거부 (403)"+(reason?": "+reason:". Master Key 또는 월간 요청 한도를 확인해주세요."),false);
+      } else if(r.status===413){
+        showToast("⚠️ 저장 용량 초과 (JSONBin 한도 초과). 첨부 사진 수를 줄여주세요.",false);
+      } else {
+        showToast("⚠️ 저장 실패 (HTTP "+r.status+(reason?": "+reason:"")+"). 잠시 후 다시 시도해주세요.",false);
+      }
+      console.warn("cloudSave HTTP",r.status,reason);
     }
     return r.ok;
   }catch(e){
