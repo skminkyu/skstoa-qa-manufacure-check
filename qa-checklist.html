@@ -533,25 +533,22 @@ function esc(s){if(s===undefined||s===null)return"";return String(s).replace(/&/
 /* ════════════════════════════════════════
    JSONBin 공유 저장소
 ════════════════════════════════════════ */
-const CFG_KEY="qa_jsonbin_cfg";
-/* 기본 자격증명 - localStorage에 저장된 값이 없을 때 사용 */
-const DEFAULT_CFG={masterKey:"$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q",binId:"69dc4fd236566621a8a84940"};
-let cfg={masterKey:"",binId:""};
+const CFG_KEY="qa_gist_cfg";
+/* Gist ID는 공개 정보 (읽기는 raw URL로 인증 불필요) */
+const GIST_ID="9b65c5a068fe1d038baa30969eb9640b";
+const GIST_OWNER="skminkyu";
+const GIST_FILE="qa_records.json";
+/* JSONBin 구 자격증명 (마이그레이션용 읽기 전용) */
+const JSONBIN_CFG={masterKey:"$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q",binId:"69dc4fd236566621a8a84940"};
+/* GitHub Token은 localStorage에만 저장 — 코드에 포함하지 않음 */
+let cfg={githubToken:""};
 try{
   const s=localStorage.getItem(CFG_KEY);
-  if(s){
-    const parsed=JSON.parse(s);
-    /* localStorage에 값이 있고 유효하면 사용, 아니면 기본값 */
-    cfg.masterKey=parsed.masterKey||DEFAULT_CFG.masterKey;
-    cfg.binId=parsed.binId||DEFAULT_CFG.binId;
-  }else{
-    /* localStorage 미설정 → 기본값 자동 적용 */
-    cfg=Object.assign({},DEFAULT_CFG);
-  }
-}catch(_){cfg=Object.assign({},DEFAULT_CFG);}
+  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||"";}
+}catch(_){}
 
 function saveCfg(){localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}
-function isConfigured(){return cfg.masterKey&&cfg.binId;}
+function isConfigured(){return!!cfg.githubToken;}
 
 const RECORDS_BACKUP_KEY="qa_records_backup";
 
@@ -570,41 +567,46 @@ function saveBackup(arr){
 }
 
 async function cloudLoad(){
-  if(!isConfigured())return null;
   try{
+    /* 읽기는 raw URL로 인증 없이 가능 (secret gist도 ID 알면 접근 가능) */
+    const rawUrl="https://gist.githubusercontent.com/"+GIST_OWNER+"/"+GIST_ID+"/raw/"+GIST_FILE+"?t="+Date.now();
     const lCtrl=new AbortController();
-    const lTimer=setTimeout(()=>lCtrl.abort(),8000);
+    const lTimer=setTimeout(()=>lCtrl.abort(),10000);
     let r;
-    try{
-      r=await fetch("https://api.jsonbin.io/v3/b/"+cfg.binId+"/latest",{
-        headers:{"X-Master-Key":cfg.masterKey},
-        signal:lCtrl.signal
-      });
-    }finally{clearTimeout(lTimer);}
-    if(r.status===404) return null;
+    try{r=await fetch(rawUrl,{signal:lCtrl.signal});}
+    finally{clearTimeout(lTimer);}
     if(!r.ok){console.warn("cloudLoad error",r.status);return null;}
-    const d=await r.json();
-    if(!d||d.record===undefined||d.record===null) return null;
-    /* 여러 형식 대응: 직접 배열 / {records:[...]} 래핑 / 객체값 배열 변환 */
+    const text=await r.text();
     let arr=null;
-    const raw=d.record;
-    if(Array.isArray(raw)){
-      arr=raw;
-    } else if(raw&&typeof raw==="object"){
-      if(Array.isArray(raw.records)) arr=raw.records;
-      else{
-        const vals=Object.values(raw);
-        if(vals.length>0&&vals.every(v=>v&&typeof v==="object"&&v.id)) arr=vals;
-      }
-    }
-    if(!arr){console.warn("cloudLoad: 알 수 없는 데이터 형식",JSON.stringify(raw).slice(0,200));arr=[];}
-    else console.log("cloudLoad: "+arr.length+"건 로드 완료");
+    try{arr=JSON.parse(text);}catch(_){arr=[];}
+    if(!Array.isArray(arr)) arr=[];
+    console.log("cloudLoad: "+arr.length+"건 로드 완료 (Gist)");
     if(arr.length>0) saveBackup(arr);
     return arr;
   }catch(e){
     console.warn("cloudLoad exception",e);
     return null;
   }
+}
+
+/* JSONBin에서 기록 읽기 (마이그레이션 전용) */
+async function jsonbinLoad(){
+  try{
+    const r=await fetch("https://api.jsonbin.io/v3/b/"+JSONBIN_CFG.binId+"/latest",{
+      headers:{"X-Master-Key":JSONBIN_CFG.masterKey}
+    });
+    if(!r.ok) return null;
+    const d=await r.json();
+    if(!d||d.record===undefined) return null;
+    const raw=d.record;
+    if(Array.isArray(raw)) return raw;
+    if(raw&&typeof raw==="object"){
+      if(Array.isArray(raw.records)) return raw.records;
+      const vals=Object.values(raw);
+      if(vals.length>0&&vals.every(v=>v&&typeof v==="object"&&v.id)) return vals;
+    }
+    return null;
+  }catch(_){return null;}
 }
 
 async function cloudSave(records){
@@ -614,41 +616,28 @@ async function cloudSave(records){
   }
   if(!isConfigured())return false;
   try{
-    const body=JSON.stringify(records);
-    /* JSONBin 한도 사전 체크 (500KB) */
-    if(body.length>500*1024){
-      const kb=Math.round(body.length/1024);
-      showToast("⚠️ 저장 용량 초과 ("+kb+"KB / 최대 500KB). 첨부 사진 수를 줄여주세요.",false);
-      return false;
-    }
-    /* 8초 타임아웃 - JSONBin 접속 불가 시 무한 대기 방지 */
+    const content=JSON.stringify(records);
     const ctrl=new AbortController();
-    const timer=setTimeout(()=>ctrl.abort(),8000);
+    const timer=setTimeout(()=>ctrl.abort(),15000);
     let r;
     try{
-      r=await fetch("https://api.jsonbin.io/v3/b/"+cfg.binId,{
-        method:"PUT",
-        headers:{"Content-Type":"application/json","X-Master-Key":cfg.masterKey},
-        body:body,
+      r=await fetch("https://api.github.com/gists/"+GIST_ID,{
+        method:"PATCH",
+        headers:{"Authorization":"Bearer "+cfg.githubToken,"Accept":"application/vnd.github+json","Content-Type":"application/json","X-GitHub-Api-Version":"2022-11-28"},
+        body:JSON.stringify({files:{[GIST_FILE]:{content:content}}}),
         signal:ctrl.signal
       });
     }finally{clearTimeout(timer);}
     if(!r.ok){
       let reason="";
-      try{const j=await r.json();reason=j.message||j.error||JSON.stringify(j);}catch(_){}
-      if(r.status===403){
-        showToast("⚠️ JSONBin 접근 거부 (403)"+(reason?": "+reason:". Master Key 또는 월간 요청 한도를 확인해주세요."),false);
-      } else if(r.status===413){
-        showToast("⚠️ 저장 용량 초과 (JSONBin 한도 초과). 첨부 사진 수를 줄여주세요.",false);
-      } else {
-        showToast("⚠️ 저장 실패 (HTTP "+r.status+(reason?": "+reason:"")+"). 잠시 후 다시 시도해주세요.",false);
-      }
+      try{const j=await r.json();reason=j.message||"";}catch(_){}
+      showToast("⚠️ 저장 실패 (HTTP "+r.status+(reason?": "+reason:"")+"). 토큰 또는 Gist ID를 확인해주세요.",false);
       console.warn("cloudSave HTTP",r.status,reason);
     }
     return r.ok;
   }catch(e){
     if(e.name==="AbortError"){
-      showToast("⚠️ 저장 시간 초과 (JSONBin 서버 응답 없음). 나중에 다시 시도하세요.",false);
+      showToast("⚠️ 저장 시간 초과. 네트워크 연결을 확인해주세요.",false);
     }
     return false;
   }
@@ -712,7 +701,7 @@ function render(){
   <div class="shared-notice ${configured?"notice-ok":"notice-warn"}">
     ${configured
       ? "✅ 공유 저장소가 연결되어 있습니다. 저장하면 팀원 모두가 확인할 수 있습니다."
-      : "⚠️ 공유 저장 미설정 상태입니다. 상단 ⚙️ 설정 버튼을 눌러 JSONBin 정보를 입력하세요."}
+      : "⚠️ 공유 저장 미설정 상태입니다. 상단 ⚙️ 설정 버튼을 눌러 GitHub Token과 Gist ID를 입력하세요."}
   </div>`;
 
   /* ── 홈 ── */
@@ -841,7 +830,7 @@ function render(){
 
     html+=`<div class="rwrap">
       <div class="rtitle">공유 평가 기록</div>
-      <div class="rsub">전체 ${S.records.length}건 · 설정된 JSONBin에 저장된 모든 사용자의 기록</div>
+      <div class="rsub">전체 ${S.records.length}건 · GitHub Gist에 저장된 모든 사용자의 기록</div>
       <div class="abar">
         <button class="btn-refresh" onclick="doRefresh()">🔄 새로고침</button>
         <button class="btn-refresh" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7" onclick="importBackupJSON()" title="JSON 백업 파일로 복구">📂 JSON 백업으로 복구</button>
@@ -897,7 +886,7 @@ function render(){
       <div id="record-list-area">
       ${isFiltered?`<div class="search-result-info">🔎 검색 결과: <strong>${filteredIdx.length}건</strong> / 전체 ${S.records.length}건</div>`:""}
       ${S.records.length===0
-        ?`<div class="empty"><div style="font-size:44px;margin-bottom:14px">📭</div><div>아직 저장된 기록이 없습니다.</div>${!configured?`<div style="font-size:12px;margin-top:8px;color:#e65100">⚙️ 설정에서 JSONBin 정보를 먼저 입력해주세요.</div>`:""}</div>`
+        ?`<div class="empty"><div style="font-size:44px;margin-bottom:14px">📭</div><div>아직 저장된 기록이 없습니다.</div>${!configured?`<div style="font-size:12px;margin-top:8px;color:#e65100">⚙️ 설정에서 GitHub Token과 Gist ID를 먼저 입력해주세요.</div>`:""}</div>`
         :filteredIdx.length===0
           ?`<div class="empty"><div style="font-size:44px;margin-bottom:14px">🔍</div><div>검색 조건에 맞는 기록이 없습니다.</div><div style="font-size:12px;margin-top:7px;color:#90a4ae">필터를 변경하거나 초기화해 보세요.</div></div>`
           :filteredIdx.map(i=>{
@@ -976,21 +965,12 @@ function render(){
   if(S.showModal){
     html+=`<div class="modal-bg" onclick="if(event.target===this)closeModal()">
       <div class="modal">
-        <h2>⚙️ 공유 저장소 설정</h2>
-        <p>JSONBin.io를 이용하면 HTML 파일 하나로 팀원 모두가 기록을 공유할 수 있습니다.<br>아래 3단계로 한 번만 설정하면 됩니다.</p>
-        <div class="step-box">
-          <b>Step 1.</b> <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> 접속 → 무료 가입<br>
-          <b>Step 2.</b> 로그인 후 상단 <b>API Keys</b> 메뉴 → <b>Master Key</b> 복사<br>
-          <b>Step 3.</b> <b>Bins</b> 메뉴 → <b>Create Bin</b> → 내용에 <code>[]</code> 입력 후 생성 → <b>Bin ID</b> 복사<br>
-          <b>Step 4.</b> 아래에 붙여넣고 저장 → 이 HTML 파일을 팀원과 공유하면 기록이 한 곳에!
-        </div>
+        <h2>⚙️ 저장 권한 설정</h2>
+        <p>GitHub Personal Access Token을 입력하면 평가 기록을 저장·수정할 수 있습니다.<br>
+        <span style="font-size:11px;color:#78909c">Token은 이 기기의 브라우저에만 저장되며 코드에 포함되지 않습니다.</span></p>
         <div class="ff">
-          <label>Master Key (X-Master-Key)</label>
-          <input id="inp-key" type="password" value="${esc(cfg.masterKey)}" placeholder="$2a$10$..."/>
-        </div>
-        <div class="ff" style="margin-top:10px">
-          <label>Bin ID</label>
-          <input id="inp-bin" value="${esc(cfg.binId)}" placeholder="6849a1f1..."/>
+          <label>GitHub Personal Access Token (gist 권한)</label>
+          <input id="inp-key" type="password" value="${esc(cfg.githubToken)}" placeholder="ghp_..."/>
         </div>
         <div class="modal-btns">
           <button class="btn btn-ol" onclick="closeModal()">취소</button>
@@ -1406,10 +1386,10 @@ async function doSave(){
     if(!ok){
       /* 용량 초과는 이미 토스트 표시됨 — 재시도 없이 즉시 종료 */
       const bodySize=JSON.stringify(newRecs).length;
-      if(bodySize>500*1024){setLoading(false);return;}
+      if(bodySize>9*1024*1024){setLoading(false);return;} /* Gist: 10MB 제한 */
       if(attempt<3){ await new Promise(r=>setTimeout(r,1000*attempt)); continue; }
       setLoading(false);
-      showToast("⚠️ 저장 실패. 네트워크 또는 JSONBin 연결을 확인해주세요.",false);
+      showToast("⚠️ 저장 실패. 네트워크 또는 GitHub Gist 연결을 확인해주세요.",false);
       return;
     }
 
@@ -1464,7 +1444,7 @@ function renderFilteredList(){
   let html="";
   if(isFiltered) html+=`<div class="search-result-info">🔎 검색 결과: <strong>${filteredIdx.length}건</strong> / 전체 ${S.records.length}건</div>`;
   if(S.records.length===0){
-    html+=`<div class="empty"><div style="font-size:44px;margin-bottom:14px">📭</div><div>아직 저장된 기록이 없습니다.</div>${!configured?`<div style="font-size:12px;margin-top:8px;color:#e65100">⚙️ 설정에서 JSONBin 정보를 먼저 입력해주세요.</div>`:""}</div>`;
+    html+=`<div class="empty"><div style="font-size:44px;margin-bottom:14px">📭</div><div>아직 저장된 기록이 없습니다.</div>${!configured?`<div style="font-size:12px;margin-top:8px;color:#e65100">⚙️ 설정에서 GitHub Token과 Gist ID를 먼저 입력해주세요.</div>`:""}</div>`;
   } else if(filteredIdx.length===0){
     html+=`<div class="empty"><div style="font-size:44px;margin-bottom:14px">🔍</div><div>검색 조건에 맞는 기록이 없습니다.</div><div style="font-size:12px;margin-top:7px;color:#90a4ae">필터를 변경하거나 초기화해 보세요.</div></div>`;
   } else {
@@ -1874,8 +1854,7 @@ function openModal(){S.showModal=true;render();}
 function closeModal(){S.showModal=false;render();}
 
 function saveCfgModal(){
-  cfg.masterKey=document.getElementById("inp-key").value.trim();
-  cfg.binId=document.getElementById("inp-bin").value.trim();
+  cfg.githubToken=document.getElementById("inp-key").value.trim();
   saveCfg();
   S.showModal=false;
   render();
@@ -1883,13 +1862,14 @@ function saveCfgModal(){
 }
 
 async function testConnection(){
-  const key=document.getElementById("inp-key").value.trim();
-  const bin=document.getElementById("inp-bin").value.trim();
-  if(!key||!bin){showToast("⚠️ Master Key와 Bin ID를 모두 입력해주세요.",false);return;}
+  const token=document.getElementById("inp-key").value.trim();
+  if(!token){showToast("⚠️ Token을 입력해주세요.",false);return;}
   try{
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${bin}/latest`,{headers:{"X-Master-Key":key}});
-    if(r.ok){showToast("✅ 연결 성공! 저장 버튼을 클릭해 설정을 저장하세요.");}
-    else{showToast(`⚠️ 연결 실패 (${r.status}). Key와 Bin ID를 확인해주세요.`,false);}
+    const r=await fetch("https://api.github.com/gists/"+GIST_ID,{
+      headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json"}
+    });
+    if(r.ok){showToast("✅ GitHub Gist 연결 성공! 저장 버튼을 클릭해 설정을 저장하세요.");}
+    else{showToast("⚠️ 연결 실패 (HTTP "+r.status+"). Token 또는 Gist ID를 확인해주세요.",false);}
   }catch(_){showToast("⚠️ 연결 실패. 인터넷 연결을 확인해주세요.",false);}
 }
 
@@ -1915,23 +1895,31 @@ window.addEventListener('popstate', function(e){
    초기화
 ════════════════════════════════════════ */
 (async()=>{
+  /* Token 미설정 시 설정 모달 자동 표시 */
+  if(!isConfigured()){S.showModal=true;}
   render();
-  if(isConfigured()){
+  if(true){ /* cloudLoad는 인증 불필요이므로 항상 실행 */
     setLoading(true);
     const recs=await cloudLoad();
     setLoading(false);
     if(Array.isArray(recs)&&recs.length>0){
       S.records=recs; render();
     } else {
-      /* 원격 실패 또는 빈 bin → localStorage 백업에서 복구 후 클라우드에 재저장 */
-      const backup=loadBackup();
-      if(backup&&backup.length>0){
-        S.records=backup; render();
-        showToast("📦 로컬 백업 "+backup.length+"건 발견 → 클라우드 복구 중...");
-        cloudSave(backup).then(ok=>{
-          if(ok){ saveBackup(backup); showToast("✅ 로컬 백업 "+backup.length+"건이 클라우드에 복구되었습니다!"); }
-          else{ showToast("⚠️ 로컬 백업을 표시합니다. 클라우드 재저장은 실패했습니다.",false); }
-        });
+      /* Gist가 비어있음 → JSONBin + localStorage 백업에서 통합 마이그레이션 */
+      showToast("📦 기존 기록 마이그레이션 중...");
+      setLoading(true);
+      const jbRecs=await jsonbinLoad();
+      setLoading(false);
+      const localBackup=loadBackup()||[];
+      /* JSONBin 기록과 로컬 백업 병합 (id 기준 중복 제거) */
+      const merged=[...(jbRecs||[])];
+      localBackup.forEach(lb=>{if(!merged.some(m=>m.id===lb.id))merged.push(lb);});
+      if(merged.length>0){
+        S.records=merged; render();
+        showToast("📦 기존 기록 "+merged.length+"건 발견 → Gist에 저장 중...");
+        const ok=await cloudSave(merged);
+        if(ok){saveBackup(merged);showToast("✅ 기존 기록 "+merged.length+"건이 Gist로 이전 완료!");}
+        else showToast("⚠️ 기록은 표시되지만 Gist 저장에 실패했습니다. 재시도하세요.",false);
       }
     }
   }
