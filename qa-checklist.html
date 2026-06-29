@@ -1393,22 +1393,17 @@ async function doSave(){
       return;
     }
 
-    /* ★ 저장 후 검증: 실제로 내 레코드가 클라우드에 있는지 확인 */
-    await new Promise(r=>setTimeout(r,600));
-    const verify=await cloudLoad();
-    if(verify&&Array.isArray(verify)&&verify.some(r=>r.id===rec.id)){
-      S.records=verify;
-      saveBackup(verify);
-      setLoading(false);
-      showToast("✅ 공유 저장소에 저장되었습니다!");
-      return;
-    }
-    /* 검증 실패 (다른 사용자가 동시 저장했을 가능성) → 재시도 */
-    if(attempt<3){ await new Promise(r=>setTimeout(r,800)); }
+    /* 저장 성공: Gist raw CDN 캐시로 인해 즉시 검증이 실패할 수 있으므로
+       HTTP 200 응답을 신뢰하고 로컬 상태를 직접 업데이트 */
+    S.records=newRecs;
+    saveBackup(newRecs);
+    setLoading(false);
+    showToast("✅ 공유 저장소에 저장되었습니다!");
+    return;
   }
 
   setLoading(false);
-  showToast("⚠️ 저장 충돌이 발생했습니다. 다시 시도해주세요.",false);
+  showToast("⚠️ 저장 실패. 네트워크 또는 GitHub Gist 연결을 확인해주세요.",false);
 }
 
 function setSearch(key,val,rerender=true){
