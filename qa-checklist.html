@@ -1421,14 +1421,31 @@ async function handlePdfUpload(input){
   render();
 }
 
+function downloadPdf(dataUrl,name){
+  /* base64 data URL → Blob → 임시 링크로 다운로드 */
+  var b64=dataUrl.split(',')[1];
+  var binary=atob(b64);
+  var bytes=new Uint8Array(binary.length);
+  for(var i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  var blob=new Blob([bytes],{type:'application/pdf'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download=name;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+}
+
 function deletePdf(idx){
   if(!S.pdfs)return;
   S.pdfs.splice(idx,1);
   render();
 }
 
+var _pdfList=[];
 function renderPdfSection(pdfs,readOnly){
   var list=pdfs||[];
+  _pdfList=list; /* 다운로드 버튼에서 인덱스로 접근하기 위한 전역 참조 */
   var totalKb=Math.round(list.reduce(function(a,p){return a+(p.size||0);},0)/1024);
   var items=list.map(function(p,i){
     return '<div class="pdf-item">'
@@ -1437,7 +1454,7 @@ function renderPdfSection(pdfs,readOnly){
       +'<span class="pdf-size">('+Math.round((p.size||0)/1024)+'KB)</span>'
       +(readOnly?''
         :'<button class="pdf-del" onclick="deletePdf('+i+')" title="삭제">✕</button>')
-      +(p.data?'<a class="pdf-dl" href="'+p.data+'" download="'+esc(p.name)+'" target="_blank">열기</a>':'')
+      +(p.data?'<button class="pdf-dl" onclick="downloadPdf(_pdfList['+i+'].data,_pdfList['+i+'].name)">다운로드</button>':'')
       +'</div>';
   }).join('');
 
