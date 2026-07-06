@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>화장품 상품확인정보 관리시스템</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2EFE9;--sur:#fff;--sur2:#F8F6F3;--bd:#E2DAD0;--pri:#1D2D44;--pri2:#253756;--acc:#B08346;--acc2:#C9984F;--red:#A83226;--tx:#1A1A1A;--tx2:#5A5A5A;--tx3:#8A8A8A;--sh:0 1px 6px rgba(0,0,0,.07);--shl:0 4px 20px rgba(0,0,0,.12);--r:10px;--rs:6px;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Noto Sans KR",sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px;line-height:1.6;}
+header{background:var(--pri);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.h-brand{display:flex;align-items:center;gap:12px;}
+.h-gem{width:32px;height:32px;background:var(--acc);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.h-title{font-size:15px;font-weight:700;color:#fff;}.h-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:1px;}
+.h-right{display:flex;align-items:center;gap:10px;}
+.mode-pill{display:flex;align-items:center;gap:7px;font-size:12px;padding:5px 13px;border-radius:20px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}.dot-conn{background:#FCD34D;animation:blink 1s infinite;}.dot-ok{background:#4ADE80;}.dot-err{background:#F87171;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.h-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.8);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:12px;font-weight:600;transition:all .18s;}
+.h-btn:hover{background:rgba(255,255,255,.22);color:#fff;}.h-btn.synced{border-color:rgba(74,222,128,.5);color:rgba(74,222,128,.9);}
+nav{background:var(--sur);border-bottom:1px solid var(--bd);padding:0 28px;display:flex;}
+.ntab{padding:14px 22px;border:none;background:none;cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:13px;font-weight:500;color:var(--tx2);border-bottom:3px solid transparent;transition:all .18s;}
+.ntab.active{color:var(--pri);border-bottom-color:var(--acc);font-weight:700;}.ntab:hover:not(.active){color:var(--pri);background:var(--sur2);}
+main{max-width:1180px;margin:0 auto;padding:28px 24px;}.tc{display:none;}.tc.active{display:block;}
+.card{background:var(--sur);border-radius:var(--r);border:1px solid var(--bd);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px;}
+.card-hd{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;}
+.card-ht{font-size:14px;font-weight:700;color:var(--pri);}.card-bd{padding:24px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:18px;}.fg:last-child{margin-bottom:0;}
+.gg{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;}.gfull{grid-column:1/-1;}
+.lbl{font-size:12px;font-weight:700;color:var(--pri);display:flex;align-items:center;gap:6px;}.req{color:var(--red);}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;}.tag-f{background:#EEF2FF;color:#3730A3;}.tag-o{background:#F0FDF4;color:#166534;}.tag-ref{background:#FFF7ED;color:#92400E;}
+input[type=text],textarea,select{width:100%;padding:9px 13px;border:1.5px solid var(--bd);border-radius:var(--rs);font-family:"Noto Sans KR",sans-serif;font-size:13px;color:var(--tx);background:var(--sur);transition:border-color .18s;}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px rgba(176,131,70,.13);}
+textarea{resize:vertical;min-height:88px;}.ta-big{min-height:120px;}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B6B6B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;}
+.mfr-row{display:flex;gap:8px;align-items:stretch;}.mfr-row input{flex:1;}
+.mfr-btn{padding:0 16px;background:var(--pri);color:#fff;border:none;border-radius:var(--rs);cursor:pointer;font-family:"Noto Sans KR",sans-serif;font-size:12px;font-weight:700;white-space:nowrap;transition:all .18s;display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.mfr-btn:hover{background:var(--pri2);}.mfr-btn:disabled{background:#C8BFB3;cursor:not-allowed;}
+.grade-box{border-radius:var(--rs);padding:14px;border:1.5px solid var(--bd);background:var(--sur2);min-height:52px;transition:all .25s;}
+.grade-box.found{background:#F0FDF4;border-color:#86EFAC;}.grade-box.not-found{background:#FFF7ED;border-color:#FED7AA;}
+.grade-box.error{background:#FFF1F2;border-color:#FECDD3;}.grade-box.need-sync{background:#EFF6FF;border-color:#BFDBFE;}
+.grade-inner{display:flex;align-items:flex-start;gap:12px;}
+.g-badge{font-size:22px;font-weight:900;width:52px;height:52px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex-shrink:0;gap:2px;}
+.g-S{background:#7B1FA2;}.g-A{background:#1565C0;}.g-B{background:#2E7D32;}.g-C{background:#F57F17;}.g-D{background:#C62828;}.g-X{background:#6B7280;}
+.g-info{flex:1;}.g-name{font-weight:700;color:var(--pri);font-size:13px;}
+.g-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;}
+.chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:#E0F2FE;color:#0369A1;}
+.chip-pass{background:#DCFCE7;color:#14532D;}.chip-cond{background:#FEF3C7;color:#92400E;}.chip-fail{background:#FEE2E2;color:#991B1B;}.chip-date{background:#F3F4F6;color:#374151;}.chip-score{background:#EDE9FE;color:#4C1D95;}
+.g-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+.g-pdf-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff;background:var(--red);padding:5px 12px;border-radius:4px;border:none;cursor:pointer;font-family:"Noto Sans KR",sans-serif;}
+.g-pdf-btn:hover{background:#7F1D1D;}
+.chk{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1.5px solid var(--bd);border-radius:var(--rs);cursor:pointer;user-select:none;}
+.chk:hover{border-color:var(--acc);background:var(--sur2);}.chk input[type=checkbox]{width:15px;height:15px;accent-color:var(--acc);cursor:pointer;flex-shrink:0;}.chk span{font-size:13px;font-weight:500;}
+.fbox{padding:14px;border:1.5px dashed var(--bd);border-radius:var(--rs);background:var(--sur2);transition:all .25s;}.fbox.on{border-color:var(--acc);background:#FFFCF5;}.fbox.off{opacity:.5;pointer-events:none;}.fhint{font-size:12px;color:var(--tx3);margin-bottom:8px;}
+.btn{padding:9px 20px;border:none;border-radius:var(--rs);font-family:"Noto Sans KR",sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px;line-height:1;}
+.btn:active{transform:scale(.97);}
+.btn-acc{background:var(--acc);color:#fff;}.btn-acc:hover{background:var(--acc2);}
+.btn-pri{background:var(--pri);color:#fff;}.btn-pri:hover{background:var(--pri2);}
+.btn-out{background:transparent;color:var(--pri);border:1.5px solid var(--bd);}.btn-out:hover{border-color:var(--pri);background:var(--sur2);}
+.btn-gh{background:transparent;color:var(--tx2);border:1.5px solid var(--bd);}.btn-gh:hover{background:var(--sur2);}
+.btn-del{background:transparent;color:var(--red);border:1.5px solid #FECDD3;}.btn-del:hover{background:#FFF1F2;}
+.btn-sm{padding:5px 11px;font-size:12px;}.btn-xs{padding:4px 9px;font-size:11px;}
+.form-acts{display:flex;gap:10px;justify-content:flex-end;padding-top:20px;border-top:1px solid var(--bd);margin-top:4px;}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}.flbl{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;}
+.res-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}.res-ct{font-size:13px;color:var(--tx2);}.res-ct strong{color:var(--pri);font-weight:700;}
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bd);}
+table{width:100%;border-collapse:collapse;min-width:960px;}
+thead{background:var(--pri);}th{padding:11px 15px;font-size:11px;font-weight:700;color:rgba(255,255,255,.85);text-align:left;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--bd);}tbody tr:hover{background:#FDFAF6;}
+td{padding:13px 15px;font-size:13px;vertical-align:top;}
+.t-name{font-weight:700;color:var(--pri);}.t-cut{max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx2);}.t-ing{max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:100px;font-size:11px;font-weight:700;}
+.p-y{background:#DCFCE7;color:#14532D;}.p-n{background:#F1F5F9;color:#475569;}.p-f{background:#EDE9FE;color:#4C1D95;}
+.p-gS{background:#F3E5F5;color:#7B1FA2;font-weight:800;}.p-gA{background:#DBEAFE;color:#1E40AF;}.p-gB{background:#DCFCE7;color:#14532D;}.p-gC{background:#FEF3C7;color:#92400E;}.p-gD{background:#FEE2E2;color:#991B1B;}
+.t-acts{display:flex;gap:5px;white-space:nowrap;}
+.empty{text-align:center;padding:60px 24px;color:var(--tx2);}.empty .ei{font-size:44px;margin-bottom:14px;}.empty h3{font-size:15px;font-weight:700;color:var(--pri);margin-bottom:6px;}.empty p{font-size:13px;}
+.ldg{text-align:center;padding:50px;color:var(--tx2);}.spin{width:28px;height:28px;border:3px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:sp .75s linear infinite;margin:0 auto 12px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+#toasts{position:fixed;top:72px;right:20px;z-index:3000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{padding:11px 18px;border-radius:var(--rs);font-size:13px;font-weight:500;color:#fff;display:flex;align-items:center;gap:10px;box-shadow:var(--shl);animation:tin .25s ease,tout .3s ease 2.7s forwards;max-width:380px;}
+.ts-ok{background:#14532D;}.ts-err{background:#7F1D1D;}.ts-info{background:var(--pri);}
+@keyframes tin{from{transform:translateX(110%);opacity:0;}to{transform:none;opacity:1;}}
+@keyframes tout{from{opacity:1;}to{opacity:0;transform:translateY(-6px);}}
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:16px;}
+.ovl.hide{display:none;}
+.modal{background:var(--sur);border-radius:var(--r);width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:var(--shl);}
+.mhd{padding:18px 24px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--sur);z-index:1;}
+.mht{font-size:15px;font-weight:700;color:var(--pri);}.mx{width:30px;height:30px;border:none;background:var(--sur2);border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--tx2);}
+.mx:hover{background:var(--bd);}.mbd{padding:24px;}.mft{padding:14px 24px;border-top:1px solid var(--bd);display:flex;gap:10px;justify-content:flex-end;}
+.ds{margin-bottom:20px;}.ds:last-child{margin-bottom:0;}.ds-t{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--acc);margin-bottom:8px;}
+.ds-v{font-size:13px;color:var(--tx);background:var(--sur2);padding:12px 14px;border-radius:var(--rs);border:1px solid var(--bd);white-space:pre-wrap;line-height:1.75;}
+.ds-v.ev{color:var(--tx3);font-style:italic;}.d2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.srow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.scard{background:var(--sur);border-radius:var(--r);border:1px solid var(--bd);padding:16px 18px;}
+.slbl{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}.sval{font-size:26px;font-weight:700;color:var(--pri);}.ssub{font-size:11px;color:var(--tx3);margin-top:3px;}
+.rec-list{max-height:180px;overflow-y:auto;border:1px solid var(--bd);border-radius:var(--rs);background:var(--sur2);}
+.rec-item{padding:7px 12px;border-bottom:1px solid var(--bd);font-size:12px;display:flex;justify-content:space-between;align-items:center;}
+.rec-item:last-child{border-bottom:none;}
+mark.hl{background:rgba(176,131,70,.22);border-radius:2px;padding:0 2px;color:inherit;}
+@media(max-width:768px){.gg,.fgrid{grid-template-columns:1fr;}.srow{grid-template-columns:1fr 1fr;}.d2{grid-template-columns:1fr;}main{padding:16px;}}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div class="ovl hide" id="syncModal"><div class="modal">
+  <div class="mhd"><span class="mht">🔄 제조사 평가 데이터 동기화</span><button class="mx" onclick="closeModal('syncModal')">×</button></div>
+  <div class="mbd" id="syncBd">로딩 중…</div>
+  <div class="mft" id="syncFt"></div>
+</div></div>
+<div class="ovl hide" id="detailModal"><div class="modal" style="max-width:700px;">
+  <div class="mhd"><span class="mht" id="detailTitle"></span><button class="mx" onclick="closeModal('detailModal')">×</button></div>
+  <div class="mbd" id="detailBd"></div>
+  <div class="mft"><button class="btn btn-gh btn-sm" onclick="closeModal('detailModal')">닫기</button><button class="btn btn-out btn-sm" id="detailEditBtn">✏️ 수정</button></div>
+</div></div>
+<div class="ovl hide" id="editModal"><div class="modal" style="max-width:700px;">
+  <div class="mhd"><span class="mht">✏️ 제품 정보 수정</span><button class="mx" onclick="closeModal('editModal')">×</button></div>
+  <div class="mbd" id="editBd"></div>
+  <div class="mft"><button class="btn btn-gh btn-sm" onclick="closeModal('editModal')">취소</button><button class="btn btn-acc btn-sm" onclick="saveEdit()">💾 수정 저장</button></div>
+</div></div>
+<header>
+  <div class="h-brand">
+    <div class="h-gem">✦</div>
+    <div><div class="h-title">화장품 상품확인정보 관리시스템</div><div class="h-sub">Cosmetics Product Information Management</div></div>
+  </div>
+  <div class="h-right">
+    <div class="mode-pill"><div class="dot dot-conn" id="hDot"></div><span id="hStat">Firebase 연결 중…</span></div>
+    <button class="h-btn" id="syncBtn" onclick="openSyncModal()">🔄 평가데이터 동기화</button>
+  </div>
+</header>
+<nav>
+  <button class="ntab active" id="nt-input" onclick="goTab('input')">📝 제품 정보 입력</button>
+  <button class="ntab" id="nt-search" onclick="goTab('search')">🔍 제품 조회 / 검색</button>
+</nav>
+<main>
+<div class="tc active" id="tc-input">
+  <div class="card">
+    <div class="card-hd"><span class="card-ht">📦 신규 제품 등록</span><span style="font-size:12px;color:var(--tx3);"><span style="color:var(--red);">*</span> 필수 항목</span></div>
+    <div class="card-bd">
+      <div class="gg">
+        <div class="fg"><label class="lbl">제품명 <span class="req">*</span></label><input type="text" id="f_nm" placeholder="예: ○○ 수분크림 50ml"></div>
+        <div class="fg">
+          <label class="lbl">화장품제조원 <span class="req">*</span></label>
+          <div class="mfr-row"><input type="text" id="f_mfr" placeholder="예: (주)○○화학" oninput="resetGrade()"><button class="mfr-btn" id="lookupBtn" onclick="lookupMfr()">🔍 평가 조회</button></div>
+        </div>
+        <div class="fg"><label class="lbl">화장품책임판매원 <span class="req">*</span></label><input type="text" id="f_slr" placeholder="예: (주)○○코스메틱"></div>
+        <div class="fg">
+          <label class="lbl">제조원 등급 <span class="tag tag-ref">참고</span></label>
+          <div class="grade-box" id="gradeBox"><span style="color:var(--tx3);font-size:13px;">제조원 입력 후 평가 조회 버튼을 클릭하세요</span></div>
+        </div>
+        <div class="fg"><label class="lbl">제품 유형</label><label class="chk"><input type="checkbox" id="f_func" onchange="togFunc(this.checked,'fbox','f_eff')"><span>기능성화장품 해당</span></label></div>
+        <div class="fg" style="visibility:hidden;"></div>
+        <div class="fg gfull"><label class="lbl">효능효과 <span class="tag tag-f">기능성화장품 전용</span></label>
+          <div class="fbox off" id="fbox"><p class="fhint">기능성화장품 해당을 체크하면 입력 가능합니다.</p><textarea id="f_eff" placeholder="예: 피부의 미백에 도움을 줌"></textarea></div>
+        </div>
+        <div class="fg gfull"><label class="lbl">전성분 <span class="req">*</span></label><textarea class="ta-big" id="f_ing" placeholder="예: 정제수, 글리세린, 나이아신아마이드&#10;쉼표(,)로 구분하면 개별 성분 검색이 가능합니다."></textarea></div>
+        <div class="fg"><label class="lbl">인체적용시험 <span class="tag tag-o">선택</span></label><textarea id="f_ht" placeholder="시험기관, 방법, 결과 등 (없으면 공란)"></textarea></div>
+        <div class="fg"><label class="lbl">인체외적용시험 <span class="tag tag-o">선택</span></label><textarea id="f_nht" placeholder="시험기관, 방법, 결과 등 (없으면 공란)"></textarea></div>
+      </div>
+      <div class="form-acts"><button class="btn btn-gh" onclick="resetForm()">🔄 초기화</button><button class="btn btn-acc" onclick="submitProd()">💾 제품 등록</button></div>
+    </div>
+  </div>
+</div>
+<div class="tc" id="tc-search">
+  <div class="srow">
+    <div class="scard"><div class="slbl">전체 제품</div><div class="sval" id="st0">0</div><div class="ssub">등록된 제품 수</div></div>
+    <div class="scard"><div class="slbl">기능성화장품</div><div class="sval" id="st1">0</div><div class="ssub">기능성 제품 수</div></div>
+    <div class="scard"><div class="slbl">인체적용시험</div><div class="sval" id="st2">0</div><div class="ssub">시험 자료 보유</div></div>
+    <div class="scard"><div class="slbl">인체외적용시험</div><div class="sval" id="st3">0</div><div class="ssub">시험 자료 보유</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><span class="card-ht">🔍 검색 필터</span><button class="btn btn-gh btn-sm" onclick="clearF()">필터 초기화</button></div>
+    <div class="card-bd"><div class="fgrid">
+      <div><div class="flbl">제품명</div><input type="text" id="sf_nm" placeholder="제품명 검색…" oninput="doFilter()"></div>
+      <div><div class="flbl">화장품제조원</div><input type="text" id="sf_mfr" placeholder="제조원 검색…" oninput="doFilter()"></div>
+      <div><div class="flbl">화장품책임판매원</div><input type="text" id="sf_slr" placeholder="책임판매원 검색…" oninput="doFilter()"></div>
+      <div><div class="flbl">전성분</div><input type="text" id="sf_ing" placeholder="예: 나이아신아마이드" oninput="doFilter()"></div>
+      <div><div class="flbl">기능성 여부</div><select id="sf_func" onchange="doFilter()"><option value="">전체</option><option value="y">기능성화장품만</option><option value="n">일반화장품만</option></select></div>
+      <div><div class="flbl">시험 자료</div><select id="sf_test" onchange="doFilter()"><option value="">전체</option><option value="ht">인체적용시험 있음</option><option value="nht">인체외적용시험 있음</option><option value="both">양쪽 모두 있음</option><option value="none">시험 없음</option></select></div>
+    </div></div>
+  </div>
+  <div class="res-bar"><span class="res-ct" id="resCt">총 <strong>0</strong>개</span><button class="btn btn-gh btn-sm" onclick="exportCSV()">📥 CSV 내보내기</button></div>
+  <div id="resWrap"><div class="card"><div class="ldg"><div class="spin"></div>데이터 불러오는 중…</div></div></div>
+</div>
+</main>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyDKyCT4yqb2WhFjPMiPRBYuzXc_Zd_OPXk",authDomain:"cosmetic-information.firebaseapp.com",projectId:"cosmetic-information",storageBucket:"cosmetic-information.firebasestorage.app",messagingSenderId:"431635610888",appId:"1:431635610888:web:6d846d9a24cabc32fb80bd"});
+const db=firebase.firestore();
+const CGMP_DATA=[
+  {id:"s1",title:"1. 인적자원",sub:null,items:[
+    {id:"c1_1",조항:"1",항목:"조직의 구성",내용:"가. 제조소 별로 독립된 제조부서와 품질부서가 있는가?\n나. 품질책임자가 모든 문서와 절차를 검토하며 승인하는가?",배점:2},
+    {id:"c1_2",조항:"2",항목:"연간 계획",내용:"가. 교육훈련의 내용 및 평가가 포함된 교육훈련 규정이 작성되어 있는가?\n나. 연간 교육계획을 수립하였는가?\n다. 연간 교육계획에 따라 모든 직원들이 정기적으로 교육을 받고 있는가?",배점:2},
+    {id:"c1_3",조항:"3",항목:"위생 기준",내용:"적절한 위생관리 기준 및 절차가 마련되고, 이를 준수하고 있는가?",배점:3},
+    {id:"c1_4",조항:"4",항목:"작업복 착용",내용:"작업소 및 보관소 내의 모든 직원들은 규정된 작업복을 착용하고 있는가?",배점:2},
+    {id:"c1_5",조항:"5",항목:"출입 제한",내용:"제조구역별 접근권한이 없는 작업원 및 방문객은 가급적 출입을 제한한 규정과 질병에 걸린 직원이 작업에 참여하지 못하게 하는 규정이 있는가?",배점:1},
+  ]},
+  {id:"s2",title:"2. 제조",sub:"제1절 시설기준",items:[
+    {id:"c2_1",조항:"6",항목:"구획/구분",내용:"제조하는 화장품의 종류 및 제형에 따라 적절히 구획, 구분 되어 있어 교차오염 우려가 없는가?",배점:3},
+    {id:"c2_2",조항:"7",항목:"내부 마감 및 표면 설계",내용:"가. 바닥, 벽, 천장은 청소 또는 위생관리를 하기 쉽게 매끄러운 표면을 지니고 청결하게 유지되어야 하며 소독제 등의 부식성에 저항력이 있는가?\n나. 작업소 내의 외관표면은 매끄럽게 설계되고, 청소, 소독제의 부식성에 저항력이 있는 것인가?",배점:2},
+    {id:"c2_3",조항:"8",항목:"위생설비 분리",내용:"적절하고 깨끗한 수세실과 화장실을 마련하고 수세실과 화장실은 접근이 쉬워야 하나 생산 구역과 분리되어 있는가?",배점:2},
+    {id:"c2_4",조항:"9",항목:"조명 설비",내용:"작업소 전체에 적절한 조명이 설치되고 제품 보호를 위해 조명의 파손시 방지대책이 있는가?",배점:1},
+    {id:"c2_5",조항:"10",항목:"공조 및 환기 시설",내용:"제품의 오염을 방지하고 적절한 온도 및 습도를 유지할 수 있는 적절한 환기시설을 갖추고 있는가?",배점:2},
+    {id:"c2_6",조항:"11",항목:"세척제 관리",내용:"각 제조구역 별 청소 및 위생관리 절차에 따라 효능이 입증된 세척제 및 소독제를 사용하고 있는가?",배점:1},
+    {id:"c2_7",조항:"12",항목:"설비 적합성",내용:"가. 사용목적에 적합하고, 청소가 가능하며, 필요시 위생관리 및 유지관리가 가능한가?\n나. 설비 등은 제품의 오염을 방지하고 배수가 용이하도록 설계, 설치되고 있으며, 제품 및 청소 소독제와 화학반응을 일으키지 않는가?\n다. 설비 등의 위치는 원자재나 직원의 이동으로 인하여 제품의 품질에 영향을 주지 않는가?\n라. 벌크 제품의 용기는 먼지나 수분으로부터 내용물을 보호할 수 있는가?\n마. 시설 및 기구에 사용되는 소모품은 품질에 영향을 주지 않는 것을 사용하는가?",배점:3},
+    {id:"c2_8",조항:"13",항목:"방충/방서",내용:"곤충, 해충이나 쥐 등을 막을 수 있는 대책을 마련하고 정기적으로 점검·확인하고 있는가?",배점:3},
+    {id:"c2_9",조항:"14",항목:"구역 청결",내용:"생산, 관리 및 보관 구역 내의 바닥, 벽, 천장 및 창문은 항상 청결하게 유지되고 있는가?",배점:3},
+    {id:"c2_10",조항:"15",항목:"정기 점검",내용:"가. 제조시설이나 설비는 정기적으로 청소하고 필요시 위생관리 프로그램을 운영하고 있는가?\n나. 건물, 시설 및 주요설비를 정기적으로 점검하여 화장품의 제조 및 품질관리에 지장이 없도록 유지, 관리, 기록하고 있는가?\n다. 세척한 설비는 다음 사용까지 오염되지 않도록 관리하고 있는가?",배점:3},
+    {id:"c2_11",조항:"16",항목:"검교정",내용:"제품의 품질에 영향을 줄 수 있는 검사·측정·시험장비 및 자동화장치는 계획을 수립하여 정기적으로 교정 및 성능 점검을 하고 있는가?",배점:3},
+  ]},
+  {id:"s3",title:"2. 제조",sub:"제2절 원자재의 관리",items:[
+    {id:"c3_1",조항:"17",항목:"원자재 입고 검사",내용:"가. 원자재 입고시 구매요구서, 성적서 및 현품이 서로 일치하는지 확인하는 등 절차가 있는가?\n나. 원자재 용기에 제조번호를 표시하고, 제조번호가 없는 경우에는 관리번호를 부여하여 보관하는가?\n다. 원자재 입고시 물품에 결함이 있는 경우 적절한 조치를 취하는가?\n라. 입고된 원자재는 상태(적합, 부적합, 검사중) 표시를 하고 있는가?\n마. 원자재 용기 및 시험기록서에 다음 사항이 기재되어 있는가? (제품명, 원자재 공급자명, 수령일자, 제조번호 또는 관리번호)",배점:3},
+    {id:"c3_2",조항:"18",항목:"선입선출",내용:"원자재 시험결과 적합판정된 것만을 선입선출방식으로 출고하고 이를 확인할 수 있는 체계가 확립되어 있는가?",배점:2},
+    {id:"c3_3",조항:"19",항목:"보관 조건",내용:"가. 원자재, 반제품 및 벌크 제품은 품질에 나쁜 영향을 미치지 아니하는 조건에서 선입선출에 의하여 출고할 수 있도록 보관하는가?\n나. 원자재, 반제품 및 벌크 제품은 바닥과 벽에 닿지 않도록 보관하고 가능한 선입선출에 의하여 출고할 수 있도록 보관하는가?\n다. 원자재, 시험 중인 제품 및 부적합품은 각각 구획된 장소에서 보관하고 있는가?",배점:3},
+    {id:"c3_4",조항:"20",항목:"재평가",내용:"원자재, 반제품 및 벌크 제품의 보관 기간이 지나면 사용 여부에 대한 재평가하는 시스템이 확립되어 있는가?",배점:2},
+    {id:"c3_5",조항:"21",항목:"용수 품질 기준 및 검사",내용:"물의 품질 적합기준이 사용 목적에 맞게 규정되어 있으며, 정기적으로 검사하고 있는가?",배점:3},
+    {id:"c3_6",조항:"22",항목:"설비 기준",내용:"물 공급 설비는 다음을 만족하는가?\n1) 물의 정체와 오염을 피할 수 있도록 설치될 것\n2) 물의 품질에 영향이 없을 것\n3) 살균처리가 가능할 것",배점:3},
+  ]},
+  {id:"s4",title:"2. 제조",sub:"제3절 제조관리",items:[
+    {id:"c4_1",조항:"23",항목:"제품표준서",내용:"제품표준서는 품목별로 다음 각 호의 사항이 포함되어 작성하여 구비하고 있는가? 1)제품명 2)작성연월일 3)효능·효과 및 주의사항 4)원료명·분량·기준량 5)공정별 작업내용 및 흐름도 6)작업 중 주의사항 7)기준 및 시험방법 8)시설 및 기기 9)보관조건 10)사용기한 11)변경이력",배점:3},
+    {id:"c4_2",조항:"24",항목:"제조관리기준서",내용:"제조관리기준서에 다음 사항이 포함되어 작성하여 구비하고 있는가? 1)제조공정관리 2)시설 및 기기 관리 3)원자재, 반제품 및 제품의 취급 4)작업원의 위생 관리 5)보관 관리 6)검체의 채취 및 관리",배점:3},
+    {id:"c4_3",조항:"25",항목:"품질관리기준서",내용:"다음 사항이 포함된 품질관리기준서를 작성하여 구비하고 있는가?\n1) 시험검체 채취방법\n2) 시험시설 및 시험기구의 점검\n3) 안정성시험\n4) 보관용 검체의 관리\n5) 표준품 및 시약의 관리\n6) 위탁시험 또는 위탁제조",배점:2},
+    {id:"c4_4",조항:"26",항목:"위생관리기준서",내용:"다음 사항이 포함된 위생관리기준서를 작성하여 구비하고 있는가?\n1) 작업원의 건강 관리\n2) 작업원의 수세, 소독 방법\n3) 작업복장의 규격\n4) 작업실 등의 청소\n5) 청소상태의 평가방법\n6) 제조시설의 세척 및 평가\n7) 방충, 방서 방법",배점:2},
+    {id:"c4_5",조항:"27",항목:"칭량 관리",내용:"가. 원료를 품질에 영향을 미치지 않는 용기나 설비에 정확하게 칭량하고 있는가?\n나. 칭량지시기록서를 품목별로 작성하고, 기재된 내용에 따라 칭량이 이루어지고 있는가?\n다. 칭량된 원료에는 품목명, 제조번호, 칭량된 양, 칭량자 등이 기재되어 있는가?",배점:3},
+    {id:"c4_6",조항:"28",항목:"제조지시기록서",내용:"가. 제조지시기록서를 품목별로 작성하고, 기재된 내용에 따라 제조가 이루어지고 있는가?\n나. 제조된 내용물(벌크)에는 품목명, 제조번호, 제조량, 제조자 등이 기재되어 있는가?",배점:3},
+    {id:"c4_7",조항:"29",항목:"벌크 관리",내용:"가. 벌크 제품은 품질이 변하지 아니하도록 적당한 용기에 넣어 지정된 장소에서 보관하고 있는가?\n나. 벌크 제품의 용기에는 다음 사항이 표시되어 있는가? (명칭 또는 코드, 제조번호, 완료된 공정명, 보관조건)\n다. 벌크 제품의 최대 보관기간이 규정되어 있는가? 최대 보관 기간이 가까워진 벌크 제품은 완제품 제조하기 전에 재평가 하는 절차가 있는가?",배점:3},
+    {id:"c4_8",조항:"30",항목:"포장지시서 및 기록서",내용:"가. 포장지시서에 의해 포장작업이 수행되고 있는가?\n나. 포장지시서에는 다음 사항이 포함되어 있는가? (제품명, 포장 설비명, 포장재 리스트, 상세 포장 공정, 포장지시수량, 포장량, 수득률 등)\n다. 포장작업 완료 후 포장지시기록서에 작성되고 있는가?",배점:3},
+    {id:"c4_9",조항:"31",항목:"보관 관리",내용:"가. 완제품은 적절한 조건하의 정해진 장소에서 보관되고 주기적으로 완제품의 재고 점검을 수행하고 있는가?\n나. 출고할 제품은 원자재, 부적합품 및 반품된 제품과 구획된 장소에서 보관하고 있는가?",배점:2},
+    {id:"c4_10",조항:"32",항목:"출고 승인",내용:"시험결과 적합으로 판정되고 품질책임자가 출고 승인한 것만을 출고하고 있는가?",배점:2},
+  ]},
+  {id:"s5",title:"3. 품질보증",sub:null,items:[
+    {id:"c5_1",조항:"33",항목:"시험기록 유지",내용:"원자재·반제품·벌크 제품·완제품에 대한 적합 기준을 마련하고 제조번호별로 시험 기록을 작성·유지하고 있는가?",배점:3},
+    {id:"c5_2",조항:"34",항목:"기준일탈(OOS)",내용:"가. 기준일탈(OOS)이 된 경우에 규정에 따라 책임자에게 보고한 후 원인조사를 실시하고 있는가?\n나. OOS 조사기록에는 발생 원인, 조사 내용, 시정조치 사항이 포함되어 있는가?\n다. 동일 문제의 재발 방지를 위한 조치가 이루어지고 있는가?",배점:3},
+    {id:"c5_3",조항:"35",항목:"재작업 절차",내용:"재작업을 하는 경우에는 재작업 절차를 따르고 있는가?",배점:2},
+    {id:"c5_4",조항:"36",항목:"폐기 규정",내용:"폐기처리규정이 작성되어 있고, 폐기 대상은 따로 보관하고 규정에 따라 신속하게 폐기하고 있는가?",배점:1},
+    {id:"c5_5",조항:"37",항목:"일탈 조사 및 재발방지",내용:"제조 또는 품질관리 중의 일탈에 대해 조사한 후 필요한 조치를 마련하고 일탈의 반복을 방지하기 위한 예방조치를 수립하고 있는가?",배점:2},
+    {id:"c5_6",조항:"38",항목:"불만 기록 관리",내용:"불만처리담당자는 모든 불만을 취합하고 신속하게 조사·조치하며 기록·유지하였는가?",배점:2},
+    {id:"c5_7",조항:"39",항목:"회수 조치",내용:"결함이 있는 사실을 알게 되었을 때 화장품책임판매업자를 통하여 제품을 회수하거나 회수에 필요한 조치를 할 수 있는 회수체계를 구축하고 있는가?",배점:3},
+    {id:"c5_8",조항:"40",항목:"원본 보관 및 보존기간",내용:"원본 문서는 품질부서에서 보관, 사본은 비치·사용하고 있으며, 적절한 보존기간이 규정되어 있는가?",배점:2},
+  ]},
+];
+
+// ═══ 상수 ═══
+var BIN_ID="69dc4fd236566621a8a84940";
+var MASTER_KEY="$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q";
+var CACHE_KEY="mfr_eval_cache_v2";
+
+// ═══ 평가 데이터 캐시 ═══
+var mfrRecords=[];   // 메모리 내 평가 기록 배열
+var _evalResult=null;
+var allProds=[],filtered=[],editId=null;
+
+// localStorage 캐시
+function saveToCache(data){
+  try{localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),records:data}));}catch(e){}
+}
+function loadFromCache(){
+  try{
+    var c=JSON.parse(localStorage.getItem(CACHE_KEY));
+    if(c&&Array.isArray(c.records)&&c.records.length>0){
+      mfrRecords=c.records;return true;
+    }
+  }catch(e){}
+  return false;
+}
+/* 다중 소스 fallback 로드: 자체 캐시 → 체크리스트 백업 순서 */
+function loadFallback(){
+  try{
+    /* 1순위: 자체 캐시(mfr_eval_cache_v2) */
+    var c=JSON.parse(localStorage.getItem(CACHE_KEY));
+    if(c&&Array.isArray(c.records)&&c.records.length>0) return c.records;
+  }catch(e){}
+  try{
+    /* 2순위: 체크리스트 백업(qa_records_backup) — 체크리스트에서 저장한 원본 */
+    var b=JSON.parse(localStorage.getItem("qa_records_backup"));
+    if(Array.isArray(b)&&b.length>0) return b;
+  }catch(e){}
+  return null;
+}
+
+// 시작 시 캐시 복원
+loadFromCache();
+
+// ═══ 동기화 모달 ═══
+function openSyncModal(){renderSyncModal();document.getElementById("syncModal").classList.remove("hide");}
+
+function renderSyncModal(){
+  var bd=document.getElementById("syncBd");
+  var ft=document.getElementById("syncFt");
+  var n=mfrRecords.length;
+
+  // 업소명 목록 구성
+  var names=[];
+  for(var i=0;i<mfrRecords.length;i++){
+    var nm=(mfrRecords[i].header&&mfrRecords[i].header.업소명)||"(업소명 없음)";
+    if(names.indexOf(nm)<0)names.push(nm);
+  }
+
+  var nameListHtml="";
+  if(names.length>0){
+    nameListHtml="<div style='margin-top:12px;'><div style='font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:6px;'>동기화된 업소 목록:</div><div class='rec-list'>";
+    for(var j=0;j<names.length;j++){
+      nameListHtml+="<div class='rec-item'><span>"+esc(names[j])+"</span></div>";
+    }
+    nameListHtml+="</div></div>";
+  }
+
+  bd.innerHTML=
+    "<div style='background:"+(n>0?"#F0FDF4":"#FFF7ED")+";border:1.5px solid "+(n>0?"#86EFAC":"#FED7AA")+";border-radius:var(--rs);padding:14px;margin-bottom:14px;'>"+
+      "<div style='font-weight:700;color:"+(n>0?"#14532D":"#92400E")+";font-size:14px;margin-bottom:3px;'>"+(n>0?"✅ "+n+"건 동기화됨":"⚠️ 동기화 필요")+"</div>"+
+      "<div style='font-size:12px;color:"+(n>0?"#166534":"#92400E")+";'>"+(n>0?"평가 조회 버튼 사용 가능":"동기화 버튼을 눌러 데이터를 불러오세요")+"</div>"+
+    "</div>"+
+    "<div style='background:#FFF3CD;border:1px solid #FFC107;border-radius:var(--rs);padding:11px 14px;font-size:12px;color:#856404;margin-bottom:14px;line-height:1.7;'>"+
+      "⚠️ <strong>중요:</strong> 동기화는 제조사 평가 시스템을 사용하지 않을 때 해주세요.<br>"+
+      "동기화 중 제조사 평가 시스템에서 공유기록이 일시적으로 안 보일 수 있습니다.<br>"+
+      "이는 JSONbin 동시 요청 제한 때문이며, <strong>데이터는 삭제되지 않습니다.</strong><br>"+
+      "제조사 평가 시스템에서 새로고침(🔄) 버튼을 누르면 즉시 복원됩니다.<br>"+
+      "📋 체크리스트 업데이트 후에는 반드시 재동기화해주세요."+
+    "</div>"+
+    nameListHtml;
+
+  ft.innerHTML=
+    "<button class='btn btn-gh btn-sm' onclick=\"closeModal('syncModal')\">닫기</button>"+
+    "<button class='btn btn-acc btn-sm' id='doSyncBtn' onclick='doSync()'>🔄 지금 동기화</button>";
+}
+
+async function doSync(){
+  var btn=document.getElementById("doSyncBtn");
+  if(btn){btn.disabled=true;btn.textContent="동기화 중…";}
+  try{
+    /* 10초 타임아웃 */
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ctrl.abort();},10000);
+    var res;
+    try{
+      res=await fetch("https://api.jsonbin.io/v3/b/"+BIN_ID+"/latest",{
+        method:"GET",
+        headers:{"X-Master-Key":MASTER_KEY},
+        signal:ctrl.signal
+      });
+    }finally{clearTimeout(timer);}
+    if(!res.ok)throw new Error("HTTP "+res.status+" — JSONbin 응답 오류");
+    var json=await res.json();
+
+    // 디버그: 실제 응답 구조 확인
+    var rawRecord=json.record;
+    var records=[];
+    if(Array.isArray(rawRecord)){
+      records=rawRecord;
+    }else if(rawRecord&&typeof rawRecord==="object"){
+      // 혹시 {records:[...]} 형태로 저장된 경우
+      if(Array.isArray(rawRecord.records))records=rawRecord.records;
+    }
+
+    if(records.length===0){
+      /* 원격 빈 결과 → 로컬 캐시에서 복구 시도 */
+      var fallback=loadFallback();
+      if(fallback&&fallback.length>0){
+        mfrRecords=fallback;
+        updateSyncBtn();
+        toast("📦 원격 저장소 비어있음 — 로컬 캐시 "+fallback.length+"건으로 표시","info");
+        renderSyncModal();
+      }else{
+        toast("📭 동기화 완료 — 저장된 평가 기록 없음","info");
+      }
+    }else{
+      mfrRecords=records;
+      saveToCache(records);
+      updateSyncBtn();
+      toast("✅ "+records.length+"건 동기화 완료!","ok");
+      renderSyncModal();
+    }
+  }catch(e){
+    /* 네트워크/타임아웃 오류 → 로컬 캐시에서 복구 */
+    var fallbackErr=loadFallback();
+    if(fallbackErr&&fallbackErr.length>0){
+      mfrRecords=fallbackErr;
+      updateSyncBtn();
+      document.getElementById("syncBd").innerHTML+=
+        "<div style='background:#FFF9C4;border:1px solid #F9A825;border-radius:var(--rs);padding:12px;margin-top:12px;font-size:12px;'>"+
+        "⚠️ 원격 동기화 실패 — 로컬 캐시 "+fallbackErr.length+"건을 표시합니다.<br>"+
+        "<span style='font-size:11px;'>오류: "+esc(e.message)+"</span></div>";
+      toast("📦 캐시 복구: "+fallbackErr.length+"건","info");
+      renderSyncModal();
+    }else{
+      document.getElementById("syncBd").innerHTML+=
+        "<div style='background:#FFF1F2;border:1px solid #FECDD3;border-radius:var(--rs);padding:12px;margin-top:12px;font-size:12px;color:var(--red);'>"+
+        "❌ 동기화 실패: "+esc(e.message)+"</div>";
+      toast("동기화 실패: "+e.message,"err");
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="🔄 지금 동기화";}
+  }
+}
+
+function updateSyncBtn(){
+  var btn=document.getElementById("syncBtn");
+  if(!btn)return;
+  if(mfrRecords.length>0){btn.className="h-btn synced";btn.textContent="✅ "+mfrRecords.length+"건 동기화됨";}
+  else{btn.className="h-btn";btn.textContent="🔄 평가데이터 동기화";}
+}
+
+// ═══ 등급 계산 ═══
+function calcGrade(e,t){
+  if(!t&&e===0)return"";if(!t)return"";
+  if(t>50){if(e>=90)return"S";if(e>=80)return"A";if(e>=71)return"B";if(e>=61)return"C";return"D";}
+  var p=(e/t)*100;if(p>=90)return"A";if(p>=80)return"B";if(p>=70)return"C";return"D";
+}
+function calcJudge(e,t){if(!t)return"";if(e===t)return"적합";return(e/t)*100>=70?"조건부 적합":"부적합";}
+function fmtDate(s){if(!s)return"";var m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[1]+". "+parseInt(m[2])+". "+parseInt(m[3])+".":String(s);}
+
+function norm(s){
+  return String(s||"").toLowerCase()
+    .replace(/\(주\)|\(유\)|㈜|\(株\)/g,"")
+    .replace(/\s+/g,"")
+    .trim();
+}
+
+// 제조원 검색 (업소명 기준, 부분 일치 포함)
+function findMfrRec(keyword){
+  if(!keyword||keyword.trim()==="")return null;
+  var kw=norm(keyword);
+  if(kw.length<1)return null;
+  var best=null,bestScore=0;
+  for(var i=0;i<mfrRecords.length;i++){
+    var rec=mfrRecords[i];
+    var h=rec.header||{};
+    var raw업소명=h.업소명||"";
+    if(!raw업소명)continue;
+    var val=norm(raw업소명);
+    if(!val)continue;
+    var score=0;
+    if(val===kw){score=100;}
+    else if(val.includes(kw)){score=Math.round(kw.length/val.length*95);}
+    else if(kw.includes(val)&&val.length>=2){score=Math.round(val.length/kw.length*85);}
+    if(score>bestScore){best=rec;bestScore=score;}
+  }
+  // 매칭 임계값 50% (기존 60%에서 완화)
+  return bestScore>=50?best:null;
+}
+
+// ═══ 평가 조회 (캐시만, JSONbin 접근 없음) ═══
+function lookupMfr(){
+  var mfr=v("f_mfr");
+  if(!mfr){toast("화장품제조원을 먼저 입력해주세요.","err");return;}
+  var btn=document.getElementById("lookupBtn");
+  var box=document.getElementById("gradeBox");
+  btn.disabled=true;
+  box.className="grade-box";
+  _evalResult=null;
+
+  if(mfrRecords.length===0){
+    box.className="grade-box need-sync";
+    box.innerHTML=
+      "<div class='grade-inner'>"+
+        "<span style='font-size:22px;'>⚠️</span>"+
+        "<div class='g-info'>"+
+          "<div class='g-name'>동기화가 필요합니다</div>"+
+          "<div style='font-size:12px;color:var(--tx2);margin-top:4px;'>우측 상단 동기화 버튼을 눌러 평가 데이터를 불러온 후 조회하세요.</div>"+
+          "<div class='g-actions'><button class='btn btn-pri btn-sm' onclick='openSyncModal()'>🔄 지금 동기화하기</button></div>"+
+        "</div>"+
+      "</div>";
+    btn.disabled=false;btn.innerHTML="🔍 평가 조회";return;
+  }
+
+  var rec=findMfrRec(mfr);
+
+  if(!rec){
+    // 유사 업소 목록 표시
+    var kw=norm(mfr);
+    var similar=[];
+    for(var i=0;i<mfrRecords.length&&similar.length<5;i++){
+      var nm=(mfrRecords[i].header&&mfrRecords[i].header.업소명)||"";
+      if(nm&&(norm(nm).includes(kw.slice(0,2))||kw.includes(norm(nm).slice(0,2)))){
+        similar.push(nm);
+      }
+    }
+    var simHtml="";
+    if(similar.length>0){
+      simHtml="<div style='margin-top:8px;font-size:11px;color:var(--tx3);'>유사 업소: "+similar.map(function(n){return esc(n);}).join(", ")+"</div>";
+    }
+    box.className="grade-box not-found";
+    box.innerHTML=
+      "<div class='grade-inner'>"+
+        "<span class='g-badge g-X' style='font-size:13px;'>없음</span>"+
+        "<div class='g-info'>"+
+          "<div class='g-name'>\""+esc(mfr)+"\" 평가 이력 없음</div>"+
+          "<div style='font-size:12px;color:var(--tx3);margin-top:3px;'>동기화된 "+mfrRecords.length+"건 중에서 찾지 못했습니다.</div>"+
+          simHtml+
+        "</div>"+
+      "</div>";
+    btn.disabled=false;btn.innerHTML="🔍 평가 조회";return;
+  }
+
+  var h=rec.header||{};
+  var 업소명=h.업소명||mfr;
+  var 적합여부=h.적합여부||calcJudge(Number(rec.earned)||0,Number(rec.total)||0);
+  var earned=Number(rec.earned)||0;
+  var total=Number(rec.total)||0;
+  var grade=calcGrade(earned,total);
+  var pct=total?Math.round((earned/total)*100):0;
+  _evalResult={grade:grade,fit:적합여부,earned:earned,total:total,pct:pct,date:fmtDate(h.심사일자||""),name:업소명,recId:String(rec.id||""),fullRec:rec};
+
+  var gc=function(g){var u=String(g).toUpperCase();return u==="S"?"g-S":u==="A"?"g-A":u==="B"?"g-B":u==="C"?"g-C":u==="D"?"g-D":"g-X";};
+  var fc=function(f){return f.includes("부적합")?"chip-fail":f.includes("조건부")?"chip-cond":f.includes("적합")?"chip-pass":"";};
+
+  box.className="grade-box found";
+  box.innerHTML=
+    "<div class='grade-inner'>"+
+      "<div class='g-badge "+gc(grade)+"'><span style='font-size:22px;font-weight:900;line-height:1;'>"+esc(grade)+"</span><span style='font-size:10px;opacity:.85;'>"+pct+"%</span></div>"+
+      "<div class='g-info'>"+
+        "<div class='g-name'>📋 "+esc(업소명)+"</div>"+
+        "<div class='g-chips'>"+
+          (적합여부?"<span class='chip "+fc(적합여부)+"'>"+esc(적합여부)+"</span>":"")+
+          (total?"<span class='chip chip-score'>"+earned+"/"+total+"점</span>":"")+
+          (h.심사일자?"<span class='chip chip-date'>심사일: "+esc(fmtDate(h.심사일자))+"</span>":"")+
+          (h.심사자?"<span class='chip'>심사자: "+esc(h.심사자)+"</span>":"")+
+        "</div>"+
+        "<div class='g-actions'><button class='g-pdf-btn' onclick='doPrint(_evalResult&&_evalResult.fullRec)'>📄 평가 결과 PDF 저장</button></div>"+
+      "</div>"+
+    "</div>";
+
+  btn.disabled=false;btn.innerHTML="🔍 평가 조회";
+}
+
+function resetGrade(){
+  var box=document.getElementById("gradeBox");
+  if(!box)return;
+  box.className="grade-box";
+  box.innerHTML="<span style='color:var(--tx3);font-size:13px;'>제조원 입력 후 평가 조회 버튼을 클릭하세요</span>";
+  _evalResult=null;
+}
+
+// ═══ PDF ═══
+function doPrintById(recId){
+  if(!recId){toast("평가 ID 없음","err");return;}
+  var rec=null;
+  for(var i=0;i<mfrRecords.length;i++){if(String(mfrRecords[i].id)===recId){rec=mfrRecords[i];break;}}
+  if(!rec){toast("캐시에 없음 — 재동기화 후 시도하세요","err");return;}
+  doPrint(rec);
+}
+
+function doPrint(rec){
+  if(!rec){toast("평가 데이터를 먼저 조회하세요","err");return;}
+  var h=rec.header||{};var J=rec.J||{};
+  var earned=Number(rec.earned)||0;var total=Number(rec.total)||0;
+  var grade=calcGrade(earned,total);var pct=total?((earned/total)*100).toFixed(1):"0.0";
+  var judge=h.적합여부||calcJudge(earned,total);
+  var subType=h.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":"일반 제조사");
+  var gradeCls=grade==="S"?"grade-s":grade==="A"?"grade-a":grade==="B"?"grade-b":grade==="C"?"grade-c":"grade-d";
+  var badgeCls=judge==="적합"?"ok":judge.includes("부적합")?"ng":"cond";
+  var rowNo=0;
+  function secHtml(sec){
+    var sbp=function(it){return(it.배점!==null&&it.배점!==undefined)?Number(it.배점):0;};
+    var secMax=sec.items.reduce(function(a,it){return a+sbp(it);},0);
+    var secE=sec.items.reduce(function(a,it){var vv=J[it.id],bp=sbp(it);return a+(vv!==undefined&&vv!==""&&vv!=="N/A"?Math.min(Number(vv),bp):0);},0);
+    var rows=sec.items.map(function(it){
+      var bp=sbp(it);var vv=J[it.id];var note=J[it.id+"_note"]||"";
+      var score=(vv!==undefined&&vv!==""&&vv!=="N/A")?Math.min(Number(vv),bp):null;
+      rowNo++;
+      return "<tr><td style='text-align:center;color:#546e7a;font-size:10px;border-bottom:1px solid #f0f2f5;padding:5px;width:4%;'>"+rowNo+"</td>"+
+        "<td style='font-weight:500;font-size:11px;border-bottom:1px solid #f0f2f5;padding:5px;width:10%;'>"+esc2(it.항목||"")+"</td>"+
+        "<td style='line-height:1.4;color:#37474f;font-size:11px;border-bottom:1px solid #f0f2f5;padding:5px;'>"+esc2(it.내용||"").replace(/\n/g,"<br>")+"</td>"+
+        "<td style='text-align:center;background:#fff9c4;font-weight:700;border-bottom:1px solid #f0f2f5;padding:5px;width:5%;'>"+bp+"</td>"+
+        "<td style='text-align:center;border-bottom:1px solid #f0f2f5;padding:5px;width:5%;'>"+(vv!==undefined&&vv!==""?vv:"-")+"</td>"+
+        "<td style='text-align:center;font-weight:600;color:#0f2547;border-bottom:1px solid #f0f2f5;padding:5px;width:5%;'>"+(score!==null?score:"-")+"</td>"+
+        "<td style='font-size:11px;color:#546e7a;border-bottom:1px solid #f0f2f5;padding:5px;width:15%;'>"+esc2(note)+"</td></tr>";
+    }).join("");
+    return "<div style='background:#fff;border-radius:8px;margin-bottom:8px;overflow:hidden;border:1px solid #e0e0e0;'>"+
+      "<div style='background:#0f2547;color:#fff;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;'>"+
+        "<span style='font-weight:600;font-size:13px;'>"+esc2(sec.title)+(sec.sub?" <span style='font-size:11px;opacity:.7;'>"+esc2(sec.sub)+"</span>":"")+"</span>"+
+        "<span style='font-size:12px;color:#e8c872;font-weight:600;'>소계: "+secE+" / "+secMax+"점</span>"+
+      "</div><table style='width:100%;border-collapse:collapse;'>"+
+        "<thead><tr style='background:#e8eaf6;'><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>순번</th><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>평가 항목</th><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>평가 내용</th><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>배점</th><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>판정</th><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>득점</th><th style='padding:5px;font-size:10px;color:#546e7a;font-weight:600;'>비고</th></tr></thead>"+
+        "<tbody>"+rows+"</tbody></table></div>";
+  }
+  var bodyHtml=CGMP_DATA.map(function(s){return secHtml(s);}).join("");
+  var etcText=J["기타_텍스트"]||"";
+  var etcHtml=etcText?"<div style='background:#fff;border-radius:8px;margin-bottom:8px;border:1px solid #e0e0e0;'><div style='background:#37474f;color:#fff;padding:8px 12px;font-weight:600;'>📝 기타 사항</div><div style='padding:14px;font-size:13px;white-space:pre-wrap;'>"+esc2(etcText)+"</div></div>":"";
+  var html="<!DOCTYPE html><html lang='ko'><head><meta charset='UTF-8'><title>제조사 평가</title>"+
+    "<link href='https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap' rel='stylesheet'>"+
+    "<style>@page{size:A4;margin:15mm 14mm;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Noto Sans KR',sans-serif;font-size:12px;color:#1a1a2e;background:#fff;}"+
+    ".grade-s{color:#7B1FA2;}.grade-a{color:#1565c0;}.grade-b{color:#2e7d32;}.grade-c{color:#f57f17;}.grade-d{color:#c62828;}"+
+    ".ok,.ng,.cond{padding:2px 10px;border-radius:14px;font-size:11px;font-weight:600;display:inline-block;}"+
+    ".ok{background:#e8f5e9;color:#2e7d32;}.ng{background:#ffebee;color:#c62828;}.cond{background:#fff8e1;color:#f57f17;}"+
+    "@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body>"+
+    "<div style='background:#fff;border-radius:8px;padding:14px;margin-bottom:10px;border:1px solid #e0e0e0;'>"+
+      "<div style='font-size:16px;font-weight:700;color:#0f2547;margin-bottom:2px;'>화장품 제조 및 품질관리기준 실시상황 평가</div>"+
+      "<div style='font-size:10px;color:#90a4ae;margin-bottom:10px;'>[식품의약품안전처 고시 제2024-46호 별표 2 준용]</div>"+
+      "<div style='display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;'>"+
+        "<div><label style='font-size:10px;color:#546e7a;display:block;margin-bottom:2px;'>업소명</label><div style='background:#f5f5f5;border-radius:5px;padding:5px 8px;border:1px solid #e0e0e0;'>"+esc2(h.업소명||"-")+"</div></div>"+
+        "<div><label style='font-size:10px;color:#546e7a;display:block;margin-bottom:2px;'>심사일자</label><div style='background:#f5f5f5;border-radius:5px;padding:5px 8px;border:1px solid #e0e0e0;'>"+esc2(h.심사일자||"-")+"</div></div>"+
+        "<div><label style='font-size:10px;color:#546e7a;display:block;margin-bottom:2px;'>소재지</label><div style='background:#f5f5f5;border-radius:5px;padding:5px 8px;border:1px solid #e0e0e0;'>"+esc2(h.소재지||"-")+"</div></div>"+
+        "<div><label style='font-size:10px;color:#546e7a;display:block;margin-bottom:2px;'>심사자</label><div style='background:#f5f5f5;border-radius:5px;padding:5px 8px;border:1px solid #e0e0e0;'>"+esc2(h.심사자||"-")+"</div></div>"+
+        "<div><label style='font-size:10px;color:#546e7a;display:block;margin-bottom:2px;'>평가유형</label><div style='background:#f5f5f5;border-radius:5px;padding:5px 8px;border:1px solid #e0e0e0;'>"+esc2(subType)+"</div></div>"+
+        "<div><label style='font-size:10px;color:#546e7a;display:block;margin-bottom:2px;'>적합여부</label><div style='background:#f5f5f5;border-radius:5px;padding:5px 8px;border:1px solid #e0e0e0;font-weight:700;'>"+esc2(judge)+"</div></div>"+
+      "</div>"+
+      "<div style='background:#e8eaf6;border-radius:7px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;gap:18px;'>"+
+        "<div style='text-align:center;'><div style='font-size:18px;font-weight:700;color:#0f2547;'>"+total+"</div><div style='font-size:9px;color:#78909c;'>총 배점</div></div>"+
+        "<div style='text-align:center;'><div style='font-size:18px;font-weight:700;color:#0f2547;'>"+earned+"</div><div style='font-size:9px;color:#78909c;'>취득 점수</div></div>"+
+        "<div style='text-align:center;'><div class='"+gradeCls+"' style='font-size:22px;font-weight:700;'>"+grade+"</div><div style='font-size:9px;color:#78909c;'>("+pct+"%)</div></div>"+
+        "<div><span class='"+badgeCls+"'>"+judge+"</span></div>"+
+      "</div>"+
+    "</div>"+
+    bodyHtml+etcHtml+
+    "<div style='background:#0f2547;color:#fff;border-radius:8px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:6px;'>"+
+      "<span style='font-weight:600;'>종 합 총 점</span>"+
+      "<span>"+earned+" / "+total+"점 &nbsp;<span class='"+gradeCls+"' style='font-size:18px;font-weight:700;'>"+grade+"</span> ("+pct+"%) &nbsp;<span class='"+badgeCls+"'>"+judge+"</span></span>"+
+    "</div>"+
+    "<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script>"+
+    "</body></html>";
+  var win=window.open("","_blank","width=1000,height=750");
+  if(!win){toast("팝업 차단됨 — 브라우저 설정에서 허용해주세요","err");return;}
+  win.document.write(html);win.document.close();
+}
+
+// ═══ Firebase ═══
+function startListen(){
+  db.collection("cosmetics_products").orderBy("createdAt","desc").onSnapshot(function(snap){
+    allProds=snap.docs.map(function(d){var o={id:d.id};var data=d.data();Object.keys(data).forEach(function(k){o[k]=data[k];});return o;});
+    setDot("ok","☁️ 실시간 연결됨");updateStats();doFilter();
+  },function(err){setDot("err","연결 오류");toast("Firebase 오류: "+err.message,"err");});
+}
+
+async function submitProd(){
+  var nm=v("f_nm"),mfr=v("f_mfr"),slr=v("f_slr"),ing=v("f_ing");
+  var isF=document.getElementById("f_func").checked;
+  if(!nm||!mfr||!slr||!ing){toast("제품명, 화장품제조원, 화장품책임판매원, 전성분은 필수입니다.","err");return;}
+  var er=_evalResult||{};
+  try{
+    await db.collection("cosmetics_products").add({
+      name:nm,manufacturer:mfr,seller:slr,isFunc:isF,
+      efficacy:isF?v("f_eff"):"",ingredients:ing,
+      ingList:ing.split(",").map(function(s){return s.trim().toLowerCase();}).filter(Boolean),
+      humanTest:v("f_ht"),nonHumanTest:v("f_nht"),
+      mfrGrade:er.grade||"",mfrFit:er.fit||"",
+      mfrScore:er.earned!=null?String(er.earned):"",mfrTotal:er.total!=null?String(er.total):"",
+      mfrPct:er.pct!=null?String(er.pct):"",mfrEvalDate:er.date||"",mfrRecordId:er.recId||"",
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    toast("제품이 등록되었습니다! ✓","ok");resetForm();goTab("search");
+  }catch(e){toast("등록 실패: "+e.message,"err");}
+}
+
+function resetForm(){
+  ["f_nm","f_mfr","f_slr","f_eff","f_ing","f_ht","f_nht"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  document.getElementById("f_func").checked=false;togFunc(false,"fbox","f_eff");resetGrade();
+}
+
+async function delProd(id,nm){
+  if(!confirm("\""+nm+"\" 제품을 삭제하겠습니까?"))return;
+  try{await db.collection("cosmetics_products").doc(id).delete();toast("삭제되었습니다.","info");}
+  catch(e){toast("삭제 실패: "+e.message,"err");}
+}
+
+function goTab(n){["input","search"].forEach(function(x){document.getElementById("nt-"+x).classList.toggle("active",x===n);document.getElementById("tc-"+x).classList.toggle("active",x===n);});}
+function togFunc(on,boxId,taId){var box=document.getElementById(boxId);box.classList.toggle("on",on);box.classList.toggle("off",!on);var hint=box.querySelector(".fhint");if(hint)hint.style.display=on?"none":"";if(!on&&taId){var el=document.getElementById(taId);if(el)el.value="";}}
+function updateStats(){document.getElementById("st0").textContent=allProds.length;document.getElementById("st1").textContent=allProds.filter(function(p){return p.isFunc;}).length;document.getElementById("st2").textContent=allProds.filter(function(p){return p.humanTest;}).length;document.getElementById("st3").textContent=allProds.filter(function(p){return p.nonHumanTest;}).length;}
+function doFilter(){
+  var snm=v("sf_nm").toLowerCase(),smfr=v("sf_mfr").toLowerCase(),sslr=v("sf_slr").toLowerCase(),sing=v("sf_ing").toLowerCase(),sfnc=v("sf_func"),stst=v("sf_test");
+  filtered=allProds.filter(function(p){
+    if(snm&&!(p.name||"").toLowerCase().includes(snm))return false;
+    if(smfr&&!(p.manufacturer||"").toLowerCase().includes(smfr))return false;
+    if(sslr&&!(p.seller||"").toLowerCase().includes(sslr))return false;
+    if(sing&&!(p.ingredients||"").toLowerCase().includes(sing))return false;
+    if(sfnc==="y"&&!p.isFunc)return false;if(sfnc==="n"&&p.isFunc)return false;
+    if(stst==="ht"&&!p.humanTest)return false;if(stst==="nht"&&!p.nonHumanTest)return false;
+    if(stst==="both"&&(!p.humanTest||!p.nonHumanTest))return false;
+    if(stst==="none"&&(p.humanTest||p.nonHumanTest))return false;
+    return true;
+  });
+  renderRes();
+}
+function clearF(){["sf_nm","sf_mfr","sf_slr","sf_ing"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});["sf_func","sf_test"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});doFilter();}
+
+function gpc(g){var u=String(g||"").toUpperCase();return u==="S"?"p-gS":u==="A"?"p-gA":u==="B"?"p-gB":u==="C"?"p-gC":u==="D"?"p-gD":"p-n";}
+function gc2(g){var u=String(g||"").toUpperCase();return u==="S"?"g-S":u==="A"?"g-A":u==="B"?"g-B":u==="C"?"g-C":u==="D"?"g-D":"g-X";}
+function fc2(f){if(!f)return"";return f.includes("부적합")?"chip-fail":f.includes("조건부")?"chip-cond":f.includes("적합")?"chip-pass":"";}
+
+function renderRes(){
+  var sing=v("sf_ing").trim();
+  document.getElementById("resCt").innerHTML="총 <strong>"+filtered.length+"</strong>개의 제품이 검색되었습니다.";
+  if(!filtered.length){
+    document.getElementById("resWrap").innerHTML="<div class='card'><div class='empty'><div class='ei'>"+(allProds.length===0?"📋":"🔎")+"</div><h3>"+(allProds.length===0?"등록된 제품이 없습니다":"검색 결과가 없습니다")+"</h3><p>"+(allProds.length===0?"제품 정보 입력 탭에서 첫 번째 제품을 등록해보세요.":"검색 조건을 변경하거나 필터를 초기화해보세요.")+"</p></div></div>";
+    return;
+  }
+  var re=sing?new RegExp(sing.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"):null;
+  var rows=filtered.map(function(p){
+    var ingRaw=p.ingredients||"";var ingShort=ingRaw.length>60?ingRaw.slice(0,60)+"…":ingRaw;
+    if(re)ingShort=ingShort.replace(re,function(m){return "<mark class='hl'>"+m+"</mark>";});
+    var gp=p.mfrGrade?"<span class='pill "+gpc(p.mfrGrade)+"'>"+esc(p.mfrGrade)+(p.mfrPct?" ("+p.mfrPct+"%)":"")+"</span>":"<span class='pill p-n'>—</span>";
+    return "<tr><td class='t-name'>"+esc(p.name)+"</td><td class='t-cut' title='"+esc(p.manufacturer)+"'>"+esc(p.manufacturer)+"</td><td class='t-cut' title='"+esc(p.seller)+"'>"+esc(p.seller)+"</td><td>"+gp+"</td><td>"+(p.isFunc?"<span class='pill p-f'>기능성</span>":"<span class='pill p-n'>일반</span>")+"</td><td class='t-ing' title='"+esc(ingRaw)+"'>"+ingShort+"</td><td>"+(p.humanTest?"<span class='pill p-y'>있음</span>":"<span class='pill p-n'>없음</span>")+"</td><td>"+(p.nonHumanTest?"<span class='pill p-y'>있음</span>":"<span class='pill p-n'>없음</span>")+"</td><td><div class='t-acts'><button class='btn btn-out btn-xs' onclick=\"viewDetail('"+esc(p.id)+"')\">상세</button><button class='btn btn-del btn-xs' onclick=\"delProd('"+esc(p.id)+"','"+esc(p.name)+"')\">삭제</button></div></td></tr>";
+  }).join("");
+  document.getElementById("resWrap").innerHTML="<div class='tbl-wrap'><table><thead><tr><th>제품명</th><th>화장품제조원</th><th>화장품책임판매원</th><th>제조원등급</th><th>유형</th><th>전성분</th><th>인체적용시험</th><th>인체외적용시험</th><th>작업</th></tr></thead><tbody>"+rows+"</tbody></table></div>";
+}
+
+function viewDetail(id){
+  var p=allProds.find(function(x){return x.id===id;});if(!p)return;
+  document.getElementById("detailTitle").textContent=p.name;
+  var fmt=function(ts){return ts&&ts.toDate?ts.toDate().toLocaleDateString("ko-KR"):"—";};
+  var hasGrade=!!p.mfrGrade;
+  var gs=hasGrade?
+    "<div class='grade-inner'>"+
+      "<div class='g-badge "+gc2(p.mfrGrade)+"'><span style='font-size:20px;font-weight:900;line-height:1;'>"+esc(p.mfrGrade)+"</span>"+(p.mfrPct?"<span style='font-size:10px;opacity:.85;'>"+p.mfrPct+"%</span>":"")+"</div>"+
+      "<div class='g-info'><div class='g-chips'>"+
+        (p.mfrFit?"<span class='chip "+fc2(p.mfrFit)+"'>"+esc(p.mfrFit)+"</span>":"")+
+        (p.mfrScore&&p.mfrTotal?"<span class='chip chip-score'>"+esc(p.mfrScore)+"/"+esc(p.mfrTotal)+"점</span>":"")+
+        (p.mfrEvalDate?"<span class='chip chip-date'>심사일: "+esc(p.mfrEvalDate)+"</span>":"")+
+      "</div>"+
+      "<div class='g-actions' style='margin-top:8px;'>"+
+        (p.mfrRecordId?"<button class='g-pdf-btn' onclick=\"doPrintById('"+esc(p.mfrRecordId)+"')\">📄 평가 결과 PDF 저장</button>":"<button class='g-pdf-btn' style='background:#6B7280;' disabled>📄 PDF (재동기화 필요)</button>")+
+      "</div></div></div>"
+    :"<span style='color:var(--tx3);font-size:13px;'>평가 이력 없음</span>";
+
+  document.getElementById("detailBd").innerHTML=
+    "<div class='d2' style='margin-bottom:20px;'>"+
+      "<div class='ds'><div class='ds-t'>화장품제조원</div><div class='ds-v'>"+esc(p.manufacturer)+"</div></div>"+
+      "<div class='ds'><div class='ds-t'>화장품책임판매원</div><div class='ds-v'>"+esc(p.seller)+"</div></div>"+
+    "</div>"+
+    "<div class='ds' style='margin-bottom:20px;'><div class='ds-t'>제조원 등급 (참고)</div>"+
+      "<div class='ds-v' style='background:"+(hasGrade?"#F0FDF4":"var(--sur2)")+";border-color:"+(hasGrade?"#86EFAC":"var(--bd)")+";'>"+gs+"</div></div>"+
+    "<div class='d2' style='margin-bottom:20px;'>"+
+      "<div class='ds'><div class='ds-t'>제품 유형</div><div class='ds-v'>"+(p.isFunc?"기능성화장품":"일반화장품")+"</div></div>"+
+      "<div class='ds'><div class='ds-t'>등록일 / 수정일</div><div class='ds-v'>"+fmt(p.createdAt)+" / "+fmt(p.updatedAt)+"</div></div>"+
+    "</div>"+
+    (p.isFunc?"<div class='ds'><div class='ds-t'>효능효과 (기능성)</div><div class='ds-v "+(p.efficacy?"":"ev")+"'>"+(p.efficacy?esc(p.efficacy):"내용 없음")+"</div></div>":"")+
+    "<div class='ds'><div class='ds-t'>전성분</div><div class='ds-v'>"+(esc(p.ingredients)||"—")+"</div></div>"+
+    "<div class='d2'>"+
+      "<div class='ds'><div class='ds-t'>인체적용시험</div><div class='ds-v "+(p.humanTest?"":"ev")+"'>"+(p.humanTest?esc(p.humanTest):"시험 자료 없음")+"</div></div>"+
+      "<div class='ds'><div class='ds-t'>인체외적용시험</div><div class='ds-v "+(p.nonHumanTest?"":"ev")+"'>"+(p.nonHumanTest?esc(p.nonHumanTest):"시험 자료 없음")+"</div></div>"+
+    "</div>";
+  document.getElementById("detailEditBtn").onclick=function(){openEdit(id);};
+  openModal("detailModal");
+}
+
+function openEdit(id){
+  closeModal("detailModal");var p=allProds.find(function(x){return x.id===id;});if(!p)return;editId=id;var fn=p.isFunc;
+  document.getElementById("editBd").innerHTML=
+    "<div class='gg'>"+
+      "<div class='fg'><label class='lbl'>제품명 <span class='req'>*</span></label><input type='text' id='e_nm' value='"+esc(p.name)+"'></div>"+
+      "<div class='fg'><label class='lbl'>화장품제조원 <span class='req'>*</span></label><input type='text' id='e_mfr' value='"+esc(p.manufacturer)+"'></div>"+
+      "<div class='fg'><label class='lbl'>화장품책임판매원 <span class='req'>*</span></label><input type='text' id='e_slr' value='"+esc(p.seller)+"'></div>"+
+      "<div class='fg'><label class='lbl'>제품 유형</label><label class='chk'><input type='checkbox' id='e_func' "+(fn?"checked":"")+" onchange=\"togFunc(this.checked,\'ebox\',\'e_eff\')\"><span>기능성화장품 해당</span></label></div>"+
+      "<div class='fg gfull'><label class='lbl'>효능효과 <span class='tag tag-f'>기능성화장품 전용</span></label>"+
+        "<div class='fbox "+(fn?"on":"off")+"' id='ebox'><p class='fhint' style='"+(fn?"display:none":"")+"'>기능성화장품 체크 시 입력 가능합니다.</p><textarea id='e_eff'>"+esc(p.efficacy||"")+"</textarea></div></div>"+
+      "<div class='fg gfull'><label class='lbl'>전성분 <span class='req'>*</span></label><textarea class='ta-big' id='e_ing'>"+esc(p.ingredients||"")+"</textarea></div>"+
+      "<div class='fg'><label class='lbl'>인체적용시험</label><textarea id='e_ht'>"+esc(p.humanTest||"")+"</textarea></div>"+
+      "<div class='fg'><label class='lbl'>인체외적용시험</label><textarea id='e_nht'>"+esc(p.nonHumanTest||"")+"</textarea></div>"+
+    "</div>";
+  openModal("editModal");
+}
+
+async function saveEdit(){
+  if(!editId)return;
+  var nm=v("e_nm"),mfr=v("e_mfr"),slr=v("e_slr"),ing=v("e_ing");
+  var isF=document.getElementById("e_func").checked;
+  if(!nm||!mfr||!slr||!ing){toast("필수 항목을 입력해주세요.","err");return;}
+  try{
+    await db.collection("cosmetics_products").doc(editId).update({name:nm,manufacturer:mfr,seller:slr,isFunc:isF,efficacy:isF?v("e_eff"):"",ingredients:ing,
+      ingList:ing.split(",").map(function(s){return s.trim().toLowerCase();}).filter(Boolean),
+      humanTest:v("e_ht"),nonHumanTest:v("e_nht"),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    toast("수정이 완료되었습니다. ✓","ok");closeModal("editModal");
+  }catch(e){toast("수정 실패: "+e.message,"err");}
+}
+
+function exportCSV(){
+  if(!filtered.length){toast("내보낼 데이터가 없습니다.","err");return;}
+  var hdrs=["제품명","화장품제조원","제조원등급","적합여부","점수","심사일","화장품책임판매원","기능성화장품","효능효과","전성분","인체적용시험","인체외적용시험"];
+  var rows=filtered.map(function(p){
+    return [p.name,p.manufacturer,p.mfrGrade||"",p.mfrFit||"",p.mfrScore&&p.mfrTotal?p.mfrScore+"/"+p.mfrTotal:"",p.mfrEvalDate||"",p.seller,p.isFunc?"Y":"N",p.efficacy||"",p.ingredients,p.humanTest||"",p.nonHumanTest||""]
+      .map(function(c){return "\""+String(c||"").replace(/"/g,"\"\"")+"\"";}).join(",");
+  });
+  var csv="\uFEFF"+[hdrs.join(",")].concat(rows).join("\n");
+  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="화장품상품확인정보_"+new Date().toLocaleDateString("ko-KR").replace(/\.\s*/g,"-").replace(/-$/,"")+".csv";
+  a.click();toast(filtered.length+"개 CSV 내보내기 완료","ok");
+}
+
+function setDot(t,l){document.getElementById("hDot").className="dot dot-"+t;document.getElementById("hStat").textContent=l;}
+function openModal(id){document.getElementById(id).classList.remove("hide");}
+function closeModal(id){document.getElementById(id).classList.add("hide");}
+function toast(msg,type){
+  var cls={ok:"ts-ok",err:"ts-err",info:"ts-info"}[type||"info"]||"ts-info";
+  var icn={ok:"✓",err:"✕",info:"ℹ"}[type||"info"]||"ℹ";
+  var el=document.createElement("div");el.className="toast "+cls;
+  el.innerHTML="<span>"+icn+"</span><span>"+msg+"</span>";
+  document.getElementById("toasts").appendChild(el);setTimeout(function(){el.remove();},3500);
+}
+function v(id){var el=document.getElementById(id);return el?(el.value||"").trim():"";}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function esc2(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+
+document.addEventListener("keydown",function(e){if(e.key==="Escape")["detailModal","editModal","syncModal"].forEach(closeModal);});
+["detailModal","editModal","syncModal"].forEach(function(id){
+  document.getElementById(id).addEventListener("click",function(e){if(e.target.id===id)closeModal(id);});
+});
+
+updateSyncBtn();
+startListen();
+
+/* ★ 페이지 로드 시 JSONBin에서 평가 데이터 자동 동기화 */
+(async function autoSync(){
+  try{
+    var ctrl=new AbortController();
+    var timer=setTimeout(function(){ctrl.abort();},10000);
+    var res;
+    try{
+      res=await fetch("https://api.jsonbin.io/v3/b/"+BIN_ID+"/latest",{
+        method:"GET",
+        headers:{"X-Master-Key":MASTER_KEY},
+        signal:ctrl.signal
+      });
+    }finally{clearTimeout(timer);}
+    if(!res.ok) return;
+    var json=await res.json();
+    var rawRecord=json.record;
+    var records=[];
+    if(Array.isArray(rawRecord)) records=rawRecord;
+    else if(rawRecord&&typeof rawRecord==="object"&&Array.isArray(rawRecord.records)) records=rawRecord.records;
+    if(records.length>0){
+      mfrRecords=records;
+      saveToCache(records);
+      updateSyncBtn();
+    }
+  }catch(e){ /* 자동 동기화 실패 시 캐시 데이터 유지 (오류 노출 안 함) */ }
+})();
+</script>
+</body>
+</html>

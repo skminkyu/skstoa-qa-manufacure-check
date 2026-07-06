@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>제조사 평가 이력 백업 뷰어</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh;}
+.topbar{background:#0f2547;color:#fff;padding:13px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.logo{font-size:17px;font-weight:700;color:#e8c872;}
+.wrap{max-width:960px;margin:0 auto;padding:24px 16px 60px;}
+.status-card{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px;}
+.status-icon{font-size:28px;}
+.status-msg{font-size:14px;font-weight:600;color:#0f2547;}
+.status-sub{font-size:12px;color:#78909c;margin-top:3px;}
+.abar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-family:'Noto Sans KR',sans-serif;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px;}
+.btn-dark{background:#0f2547;color:#fff;} .btn-dark:hover{background:#1a3a6e;}
+.btn-gold{background:#e8c872;color:#0f2547;} .btn-gold:hover{background:#d4a800;}
+.btn-green{background:#2e7d32;color:#fff;} .btn-green:hover{background:#1b5e20;}
+.btn-red{background:#c62828;color:#fff;} .btn-red:hover{background:#b71c1c;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.rec-card{background:#fff;border:2px solid #e0e4ea;border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.rec-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.rec-icon{font-size:24px;}
+.rec-meta{flex:1;}
+.rec-title{font-weight:700;font-size:14px;color:#0f2547;}
+.rec-info{font-size:12px;color:#78909c;margin-top:2px;}
+.rec-saved{font-size:11px;color:#b0bec5;margin-top:2px;}
+.rec-score{text-align:right;}
+.grade{font-size:26px;font-weight:800;line-height:1;}
+.grade-s{color:#7B1FA2;} .grade-a{color:#1565c0;} .grade-b{color:#2e7d32;} .grade-c{color:#f57f17;} .grade-d{color:#c62828;}
+.badge{padding:3px 12px;border-radius:18px;font-size:12px;font-weight:600;display:inline-block;margin-top:4px;}
+.ok{background:#e8f5e9;color:#2e7d32;} .ng{background:#ffebee;color:#c62828;} .cond{background:#fff8e1;color:#f57f17;}
+.rec-body{border-top:1px solid #f0f2f5;padding-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;}
+.field{display:flex;flex-direction:column;gap:2px;}
+.field label{font-size:10px;font-weight:600;color:#90a4ae;letter-spacing:.4px;}
+.field span{font-size:13px;color:#37474f;}
+.empty{text-align:center;padding:60px 20px;color:#90a4ae;font-size:14px;}
+.json-box{background:#1a1a2e;color:#a8ff78;border-radius:10px;padding:16px;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;margin-top:14px;display:none;}
+.toggle-json{font-size:11px;color:#1565c0;cursor:pointer;margin-top:6px;display:inline-block;}
+.toggle-json:hover{text-decoration:underline;}
+#progressBar{height:4px;background:#e8c872;width:0%;transition:width .3s;border-radius:2px;margin-top:4px;}
+.section-detail{background:#f8f9ff;border-radius:8px;padding:12px;margin-top:10px;}
+.section-detail table{width:100%;border-collapse:collapse;font-size:11px;}
+.section-detail th{background:#e8eaf6;color:#546e7a;padding:5px 8px;text-align:left;font-weight:600;}
+.section-detail td{padding:5px 8px;border-bottom:1px solid #f0f2f5;vertical-align:top;}
+.section-detail tr:last-child td{border-bottom:none;}
+.expand-btn{font-size:11px;color:#1565c0;cursor:pointer;background:none;border:none;font-family:'Noto Sans KR',sans-serif;padding:4px 0;}
+.expand-btn:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="logo">SK스토아 QA</span>
+  <span style="font-size:13px;color:#90caf9;margin-left:4px;">제조사 평가 이력 백업 뷰어</span>
+</div>
+<div class="wrap">
+  <div class="status-card" id="statusCard">
+    <div class="status-icon">⏳</div>
+    <div>
+      <div class="status-msg" id="statusMsg">JSONBin에서 데이터 불러오는 중...</div>
+      <div class="status-sub" id="statusSub">잠시만 기다려주세요</div>
+      <div id="progressBar"></div>
+    </div>
+  </div>
+  <div class="abar" id="actionBar" style="display:none">
+    <button class="btn btn-gold" onclick="downloadJSON()">💾 JSON 백업 다운로드</button>
+    <button class="btn btn-green" onclick="downloadReadableHTML()">📄 읽기 쉬운 HTML 내보내기</button>
+    <button class="btn btn-dark" onclick="loadData()">🔄 다시 불러오기</button>
+  </div>
+  <div id="recList"></div>
+</div>
+
+<script>
+var BIN_ID="69dc4fd236566621a8a84940";
+var MASTER_KEY="$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q";
+var allRecords=[];
+
+function pct(e,t){return t?((e/t)*100).toFixed(1):"0.0";}
+function grade(e,t,type){
+  if(!t)return"-";
+  if(type==="cgmp"){if(e>=90)return"S";if(e>=80)return"A";if(e>=71)return"B";if(e>=61)return"C";return"D";}
+  if(type==="haccp_g"){if(e>=104)return"S";if(e>=92)return"A";if(e>=81)return"B";if(e>=69)return"C";return"D";}
+  if(type==="haccp_s"){
+    if(t<=30){if(e>=27)return"S";if(e>=24)return"A";if(e>=21)return"B";if(e>=18)return"C";return"D";}
+    else{if(e>=30)return"S";if(e>=26)return"A";if(e>=23)return"B";if(e>=20)return"C";return"D";}
+  }
+  var p=(e/t)*100;if(p>=90)return"A";if(p>=80)return"B";if(p>=70)return"C";return"D";
+}
+function gradeCls(g){return g==="S"?"grade-s":g==="A"?"grade-a":g==="B"?"grade-b":g==="C"?"grade-c":g==="D"?"grade-d":"";}
+function badgeCls(j){return(j||"").includes("부적합")?"ng":(j||"").includes("조건부")?"cond":"ok";}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function typeLabel(t){return t==="cgmp"?"💄 화장품":t==="haccp_g"?"🍱 식품 제조·가공업":t==="haccp_s"?"🥘 농·축·수산물 취급업소":"기타";}
+function fmtDate(s){if(!s)return"-";return String(s).replace(/-/g,".");}
+function fmtSaved(s){if(!s)return"-";try{return new Date(s).toLocaleString("ko-KR");}catch(e){return s;}}
+
+async function loadData(){
+  setStatus("⏳","JSONBin에서 데이터 불러오는 중...","잠시만 기다려주세요");
+  setProgress(10);
+  document.getElementById("actionBar").style.display="none";
+  document.getElementById("recList").innerHTML="";
+
+  try{
+    var res=await fetch("https://api.jsonbin.io/v3/b/"+BIN_ID+"/latest",{
+      headers:{"X-Master-Key":MASTER_KEY,"X-Bin-Meta":"false"}
+    });
+    setProgress(60);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    var data=await res.json();
+    var records=Array.isArray(data.record)?data.record:Array.isArray(data)?data:[];
+    setProgress(100);
+    allRecords=records;
+
+    if(records.length===0){
+      setStatus("📭","저장된 기록이 없습니다","JSONBin Bin이 비어있습니다");
+      return;
+    }
+    setStatus("✅","총 "+records.length+"건의 평가 이력을 불러왔습니다","JSONBin 원격 저장소에서 성공적으로 읽었습니다 · JSON 백업 다운로드를 권장합니다");
+    document.getElementById("actionBar").style.display="flex";
+    renderRecords(records);
+  }catch(e){
+    setProgress(0);
+    /* 로컬 백업 시도 */
+    var backup=null;
+    try{
+      var b=localStorage.getItem("qa_records_backup");
+      if(b){var arr=JSON.parse(b);if(Array.isArray(arr)&&arr.length>0)backup=arr;}
+    }catch(_){}
+    if(backup){
+      allRecords=backup;
+      setStatus("⚠️","JSONBin 연결 실패 — 브라우저 로컬 백업 "+backup.length+"건을 표시합니다","오류: "+e.message+". 아래 데이터는 이 브라우저의 로컬 캐시입니다.");
+      document.getElementById("actionBar").style.display="flex";
+      renderRecords(backup);
+    }else{
+      setStatus("❌","데이터 불러오기 실패","오류: "+e.message+". 네트워크 연결을 확인하거나 체크리스트 페이지에서 먼저 동기화해보세요.");
+    }
+  }
+}
+
+function setStatus(icon,msg,sub){
+  document.querySelector(".status-icon").textContent=icon;
+  document.getElementById("statusMsg").textContent=msg;
+  document.getElementById("statusSub").textContent=sub;
+}
+function setProgress(v){document.getElementById("progressBar").style.width=v+"%";}
+
+function renderRecords(records){
+  var html="";
+  records.forEach(function(rec,idx){
+    var h=rec.header||{};
+    var e=Number(rec.earned)||0;
+    var t=Number(rec.total)||0;
+    var g=grade(e,t,rec.clType);
+    var p=pct(e,t);
+    var judge=h.적합여부||(t>0?(e===t?"적합":(e/t)*100>=70?"조건부 적합":"부적합"):"-");
+    var J=rec.J||{};
+
+    /* 상세 평가 항목 수집 */
+    var detailRows="";
+    var hasDetail=Object.keys(J).filter(function(k){return !k.endsWith("_note")&&!k.endsWith("_bp")&&k!=="기타_텍스트";}).length>0;
+
+    html+="<div class='rec-card'>";
+    html+="<div class='rec-header'>";
+    html+="<div class='rec-icon'>"+typeLabel(rec.clType).slice(0,2)+"</div>";
+    html+="<div class='rec-meta'>";
+    html+="<div class='rec-title'>"+esc(typeLabel(rec.clType).slice(3))+(h.업소명?" · "+esc(h.업소명):"")+"</div>";
+    html+="<div class='rec-info'>심사일: "+esc(fmtDate(h.심사일자))+" · 심사자: "+esc(h.심사자||"-")+" · "+esc(h.소재지||"-")+"</div>";
+    html+="<div class='rec-saved'>저장: "+esc(fmtSaved(rec.savedAt))+"</div>";
+    html+="</div>";
+    html+="<div class='rec-score'>";
+    html+="<div class='grade "+gradeCls(g)+"'>"+esc(g)+"</div>";
+    html+="<div style='font-size:12px;color:#78909c;'>"+e+"/"+t+"점 ("+p+"%)</div>";
+    html+="<span class='badge "+badgeCls(judge)+"'>"+esc(judge)+"</span>";
+    html+="</div>";
+    html+="</div>";
+
+    /* 기본 정보 */
+    html+="<div class='rec-body'>";
+    html+="<div class='field'><label>업소명</label><span>"+esc(h.업소명||"-")+"</span></div>";
+    html+="<div class='field'><label>심사일자</label><span>"+esc(h.심사일자||"-")+"</span></div>";
+    html+="<div class='field'><label>소재지</label><span>"+esc(h.소재지||"-")+"</span></div>";
+    html+="<div class='field'><label>심사자</label><span>"+esc(h.심사자||"-")+"</span></div>";
+    html+="<div class='field'><label>평가유형</label><span>"+esc(h.평가유형서브||typeLabel(rec.clType).slice(3))+"</span></div>";
+    html+="<div class='field'><label>적합여부</label><span style='font-weight:700'>"+esc(judge)+"</span></div>";
+    html+="</div>";
+
+    /* 기타사항 */
+    var etc=J["기타_텍스트"]||"";
+    if(etc.trim()){
+      html+="<div style='margin-top:10px;padding:8px 10px;background:#f5f5f5;border-radius:6px;font-size:12px;color:#37474f;'>";
+      html+="<span style='font-size:10px;font-weight:600;color:#78909c;'>📝 기타사항</span><br>"+esc(etc).replace(/\n/g,"<br>");
+      html+="</div>";
+    }
+
+    /* 상세 보기 토글 */
+    html+="<div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>";
+    html+="<button class='expand-btn' onclick='toggleDetail("+idx+")' id='expandBtn"+idx+"'>▶ 평가 항목 상세 보기</button>";
+    html+="<span class='toggle-json' onclick='toggleJSON("+idx+")'>{ } 원본 JSON 보기</span>";
+    html+="</div>";
+    html+="<div id='detail"+idx+"' style='display:none'></div>";
+    html+="<div id='json"+idx+"' class='json-box'>"+esc(JSON.stringify(rec,null,2))+"</div>";
+    html+="</div>";
+  });
+  document.getElementById("recList").innerHTML=html||"<div class='empty'>기록이 없습니다</div>";
+}
+
+var expandedState={};
+function toggleDetail(idx){
+  var el=document.getElementById("detail"+idx);
+  var btn=document.getElementById("expandBtn"+idx);
+  if(expandedState[idx]){
+    el.style.display="none";
+    btn.textContent="▶ 평가 항목 상세 보기";
+    expandedState[idx]=false;
+  }else{
+    el.innerHTML=buildDetailHTML(allRecords[idx]);
+    el.style.display="block";
+    btn.textContent="▼ 평가 항목 접기";
+    expandedState[idx]=true;
+  }
+}
+function toggleJSON(idx){
+  var el=document.getElementById("json"+idx);
+  el.style.display=el.style.display==="none"?"block":"none";
+}
+
+function buildDetailHTML(rec){
+  if(!rec)return"";
+  var J=rec.J||{};
+  var ct=rec.clType;
+  /* CGMP 데이터 내장 */
+  var CGMP=[
+    {title:"1. 인적자원",items:[
+      {id:"c1_1",항목:"조직의 구성",배점:2},{id:"c1_2",항목:"연간 계획",배점:2},{id:"c1_3",항목:"위생 기준",배점:3},
+      {id:"c1_4",항목:"작업복 착용",배점:2},{id:"c1_5",항목:"출입 제한",배점:1}
+    ]},
+    {title:"2. 제조 (시설기준)",items:[
+      {id:"c2_1",항목:"구획/구분",배점:3},{id:"c2_2",항목:"내부 마감",배점:2},{id:"c2_3",항목:"위생설비",배점:2},
+      {id:"c2_4",항목:"조명 설비",배점:1},{id:"c2_5",항목:"공조/환기",배점:2},{id:"c2_6",항목:"세척제 관리",배점:1},
+      {id:"c2_7",항목:"설비 적합성",배점:3},{id:"c2_8",항목:"방충/방서",배점:3},{id:"c2_9",항목:"구역 청결",배점:3},
+      {id:"c2_10",항목:"정기 점검",배점:3},{id:"c2_11",항목:"검교정",배점:3}
+    ]},
+    {title:"2. 제조 (원자재 관리)",items:[
+      {id:"c3_1",항목:"원자재 입고",배점:3},{id:"c3_2",항목:"선입선출",배점:2},{id:"c3_3",항목:"보관 조건",배점:3},
+      {id:"c3_4",항목:"재평가",배점:2},{id:"c3_5",항목:"용수 기준",배점:3},{id:"c3_6",항목:"설비 기준",배점:3}
+    ]},
+    {title:"2. 제조 (제조관리)",items:[
+      {id:"c4_1",항목:"제품표준서",배점:3},{id:"c4_2",항목:"제조관리기준서",배점:3},{id:"c4_3",항목:"품질관리기준서",배점:2},
+      {id:"c4_4",항목:"위생관리기준서",배점:2},{id:"c4_5",항목:"칭량 관리",배점:3},{id:"c4_6",항목:"제조지시기록서",배점:3},
+      {id:"c4_7",항목:"벌크 관리",배점:3},{id:"c4_8",항목:"포장지시서",배점:3},{id:"c4_9",항목:"보관 관리",배점:2},
+      {id:"c4_10",항목:"출고 승인",배점:2}
+    ]},
+    {title:"3. 품질보증",items:[
+      {id:"c5_1",항목:"시험기록 유지",배점:3},{id:"c5_2",항목:"기준일탈(OOS)",배점:3},{id:"c5_3",항목:"재작업 절차",배점:2},
+      {id:"c5_4",항목:"폐기 규정",배점:1},{id:"c5_5",항목:"일탈 조사",배점:2},{id:"c5_6",항목:"불만 기록",배점:2},
+      {id:"c5_7",항목:"회수 조치",배점:3},{id:"c5_8",항목:"원본 보관",배점:2}
+    ]}
+  ];
+
+  var html="<div class='section-detail'>";
+  /* 평가된 항목만 표시 */
+  var anyFilled=false;
+  CGMP.forEach(function(sec){
+    var rows="";
+    sec.items.forEach(function(it){
+      var v=J[it.id];
+      var note=J[it.id+"_note"]||"";
+      if(v===undefined&&!note) return;
+      anyFilled=true;
+      var bp=Number(it.배점);
+      var score=(v!==undefined&&v!==""&&v!=="N/A")?Math.min(Number(v),bp):v||"-";
+      var rowStyle=v!==undefined&&v!=="N/A"&&Number(v)<bp?"background:#fff8e1;":"";
+      rows+="<tr style='"+rowStyle+"'>";
+      rows+="<td style='width:20%;font-weight:500;'>"+esc(it.항목)+"</td>";
+      rows+="<td style='width:8%;text-align:center;background:#fff9c4;font-weight:700;'>"+bp+"</td>";
+      rows+="<td style='width:8%;text-align:center;font-weight:700;color:#0f2547;'>"+esc(String(score))+"</td>";
+      rows+="<td style='color:#546e7a;'>"+esc(note)+"</td>";
+      rows+="</tr>";
+    });
+    if(!rows) return;
+    html+="<div style='margin-bottom:10px;'>";
+    html+="<div style='font-size:11px;font-weight:700;color:#fff;background:#0f2547;padding:5px 8px;border-radius:5px 5px 0 0;'>"+esc(sec.title)+"</div>";
+    html+="<table><thead><tr><th>항목</th><th style='text-align:center;'>배점</th><th style='text-align:center;'>득점</th><th>비고</th></tr></thead><tbody>"+rows+"</tbody></table>";
+    html+="</div>";
+  });
+  if(!anyFilled) html+="<div style='color:#90a4ae;font-size:12px;padding:8px;'>평가 입력값이 없습니다.</div>";
+  html+="</div>";
+  return html;
+}
+
+function downloadJSON(){
+  if(!allRecords.length){alert("다운로드할 데이터가 없습니다.");return;}
+  var json=JSON.stringify(allRecords,null,2);
+  var blob=new Blob([json],{type:"application/json;charset=utf-8"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="제조사평가이력_백업_"+new Date().toLocaleDateString("ko-KR").replace(/\.\s*/g,"").replace(/\s/g,"")+".json";
+  a.click();
+}
+
+function downloadReadableHTML(){
+  if(!allRecords.length){alert("다운로드할 데이터가 없습니다.");return;}
+  var rows="";
+  allRecords.forEach(function(rec,i){
+    var h=rec.header||{};
+    var e=Number(rec.earned)||0;
+    var t=Number(rec.total)||0;
+    var g=grade(e,t,rec.clType);
+    var p=pct(e,t);
+    var judge=h.적합여부||(t>0?(e===t?"적합":(e/t)*100>=70?"조건부 적합":"부적합"):"-");
+    var jColor=judge.includes("부적합")?"#c62828":judge.includes("조건부")?"#f57f17":"#2e7d32";
+    rows+="<tr>";
+    rows+="<td>"+(i+1)+"</td>";
+    rows+="<td>"+esc(typeLabel(rec.clType).slice(3))+"</td>";
+    rows+="<td style='font-weight:700;'>"+esc(h.업소명||"-")+"</td>";
+    rows+="<td>"+esc(h.심사일자||"-")+"</td>";
+    rows+="<td>"+esc(h.심사자||"-")+"</td>";
+    rows+="<td>"+esc(h.소재지||"-")+"</td>";
+    rows+="<td style='text-align:center;font-weight:800;font-size:18px;color:"+
+      (g==="S"?"#7B1FA2":g==="A"?"#1565c0":g==="B"?"#2e7d32":g==="C"?"#f57f17":"#c62828")+"'>"+esc(g)+"</td>";
+    rows+="<td style='text-align:center;'>"+e+"/"+t+"<br><span style='font-size:11px;color:#78909c;'>("+p+"%)</span></td>";
+    rows+="<td style='text-align:center;font-weight:700;color:"+jColor+";'>"+esc(judge)+"</td>";
+    rows+="<td style='font-size:11px;color:#546e7a;'>"+esc(new Date(rec.savedAt||"").toLocaleString("ko-KR"))+"</td>";
+    rows+="</tr>";
+  });
+  var html="<!DOCTYPE html><html lang='ko'><head><meta charset='UTF-8'><title>제조사 평가 이력</title>"+
+    "<style>body{font-family:'Noto Sans KR',sans-serif;padding:24px;}h2{color:#0f2547;margin-bottom:16px;}"+
+    "table{width:100%;border-collapse:collapse;}th{background:#0f2547;color:#fff;padding:9px 12px;font-size:12px;text-align:left;}"+
+    "td{padding:9px 12px;font-size:13px;border-bottom:1px solid #e0e4ea;}tr:hover td{background:#f8f9ff;}"+
+    ".ts{font-size:11px;color:#78909c;margin-bottom:10px;}</style></head><body>"+
+    "<h2>SK스토아 제조사 평가 이력</h2>"+
+    "<div class='ts'>총 "+allRecords.length+"건 · 출력일: "+new Date().toLocaleString("ko-KR")+"</div>"+
+    "<table><thead><tr><th>No</th><th>유형</th><th>업소명</th><th>심사일자</th><th>심사자</th><th>소재지</th><th>등급</th><th>점수</th><th>적합여부</th><th>저장일시</th></tr></thead>"+
+    "<tbody>"+rows+"</tbody></table></body></html>";
+  var blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="제조사평가이력_"+new Date().toLocaleDateString("ko-KR").replace(/\.\s*/g,"").replace(/\s/g,"")+".html";
+  a.click();
+}
+
+/* 시작 */
+loadData();
+</script>
+</body>
+</html>
