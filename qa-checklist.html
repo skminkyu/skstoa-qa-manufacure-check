@@ -990,25 +990,52 @@ function render(){
     const rec=S.selRec;
     const rt=TYPES[rec.clType];
     const rj=judge(rec.earned,rec.total,rec.clType);
+    /* 수기입력 모드 판별 */
+    const recIsManual=(rec.clType==="haccp_g"&&rec.header.점수입력모드==="수기입력");
+    const recManualPct=recIsManual?parseFloat(rec.header.수기입력점수||rec.earned||0):null;
+    const recManualJd=recIsManual?(recManualPct>=90?"적합":recManualPct>=60?"조건부 적합":"부적합"):rj;
+    const recManualGrade=recIsManual?(recManualPct>=90?"S":recManualPct>=80?"A":recManualPct>=70?"B":recManualPct>=60?"C":"D"):null;
+    /* 심사자 표시 문자열 (haccp_g) */
+    const recAuditor=(rec.clType==="haccp_g")
+      ?((rec.header.심사자유형||"개인")==="기관"
+        ?"기관 · "+(rec.header.심사기관||"-")
+        :"개인(QA담당자) · "+(rec.header.심사자||"-"))
+      :(rec.header.심사자||"-");
+    /* 점수입력방식 표시 (haccp_g) */
+    const recScoreMode=(rec.clType==="haccp_g")
+      ?(rec.header.점수입력모드==="수기입력"?"수기입력 ("+recManualPct+"%)":"자동계산")
+      :null;
+    /* 헤더 필드 배열 */
+    const detailFields=(function(){
+      var base=[
+        ["업소명",rec.header.업소명||"-"],
+        ["심사일자",rec.header.심사일자],
+        ["소재지",rec.header.소재지||"-"],
+        ["심사자",recAuditor],
+        ["평가유형",(rec.clType==="cgmp"||rec.clType==="haccp_g")?(rec.header.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":"일반 HACCP")):rec.clType==="haccp_s"?(rec.header.평가유형서브||"농산물"):rt.유형],
+      ];
+      if(rec.clType==="haccp_g") base.push(["점수입력방식",recScoreMode]);
+      if(rec.clType!=="haccp_s") base.push(["판정",recIsManual?recManualJd:rj]);
+      return base;
+    })();
     html+=`<div class="wrap">
       <div class="hcard">
         <div class="htitle">${rt.title}</div>
         <div class="href">${rt.ref}</div>
         <div class="fgrid">
-          ${(rec.clType==="haccp_s"?[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",rec.header.평가유형서브||"농산물"]]:[["업소명",rec.header.업소명||"-"],["심사일자",rec.header.심사일자],["소재지",rec.header.소재지||"-"],["심사자",rec.header.심사자||"-"],["평가유형",(rec.clType==="cgmp"||rec.clType==="haccp_g")?(rec.header.평가유형서브||(rec.clType==="cgmp"?"CGMP 제조사":"일반 HACCP")):rt.유형],["적합여부",rj]]).map(([l,v])=>`
-          <div class="ff"><label>${l}</label><div style="padding:7px 10px;background:#f5f5f5;border-radius:7px;font-size:13px;border:1px solid #e0e0e0">${esc(v)}</div></div>`).join("")}
+          ${detailFields.map(([l,v])=>`
+          <div class="ff"><label>${l}</label><div style="padding:7px 10px;background:#f5f5f5;border-radius:7px;font-size:13px;border:1px solid #e0e0e0">${esc(String(v||"-"))}</div></div>`).join("")}
         </div>
         <div class="sbar" style="margin-top:12px">
-          <div class="si"><div class="sv">${rec.total}</div><div class="sl">총 배점</div></div>
-          <div class="si"><div class="sv">${rec.earned}</div><div class="sl">취득 점수</div></div>
-          <div class="si">
-            <div class="grade-badge ${gradeCls(grade(rec.earned,rec.total,rec.clType))}">
-              <span class="grade-letter">${grade(rec.earned,rec.total,rec.clType)}</span>
-              <span class="grade-pct">(${pct(rec.earned,rec.total)}%)</span>
-            </div>
-            <div class="sl">등급</div>
-          </div>
-          ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rj)}">${rj}</span></div>`:""}
+          ${recIsManual
+            ?`<div class="si"><div class="sv">${isNaN(recManualPct)?"-":recManualPct}</div><div class="sl">입력 점수(%)</div></div>
+               <div class="si"><div class="grade-badge ${gradeCls(recManualGrade||'')}"><span class="grade-letter">${recManualGrade||"-"}</span><span class="grade-pct">(수기)</span></div><div class="sl">등급</div></div>
+               <div class="si"><span class="sbadge ${badgeCls(recManualJd)}">${recManualJd}</span></div>`
+            :`<div class="si"><div class="sv">${rec.total}</div><div class="sl">총 배점</div></div>
+               <div class="si"><div class="sv">${rec.earned}</div><div class="sl">취득 점수</div></div>
+               <div class="si"><div class="grade-badge ${gradeCls(grade(rec.earned,rec.total,rec.clType))}"><span class="grade-letter">${grade(rec.earned,rec.total,rec.clType)}</span><span class="grade-pct">(${pct(rec.earned,rec.total)}%)</span></div><div class="sl">등급</div></div>
+               ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rj)}">${rj}</span></div>`:""}`
+          }
         </div>
         ${renderGradeGuide(rec.clType)}
       </div>
@@ -1023,7 +1050,10 @@ function render(){
       ${renderSummary(rt.data,rec.J)}
       <div class="total-bar">
         <span class="tl">종 합 총 점</span>
-        <span class="tr">${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span>${rec.clType!=="haccp_s"?` &nbsp;<span class="sbadge ${badgeCls(rj)}" style="font-size:12px">${rj}</span>`:""}</span>
+        <span class="tr">${recIsManual
+          ?`<span style="font-size:16px">${recManualPct}%</span> &nbsp;<span class="${gradeCls(recManualGrade||'')}" style="font-size:20px;font-weight:700">${recManualGrade||"-"}</span><span style="font-size:12px;opacity:.8"> (수기입력)</span> &nbsp;<span class="sbadge ${badgeCls(recManualJd)}" style="font-size:12px">${recManualJd}</span>`
+          :`${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span>${rec.clType!=="haccp_s"?` &nbsp;<span class="sbadge ${badgeCls(rj)}" style="font-size:12px">${rj}</span>`:""}`
+        }</span>
       </div>
       ${renderPhotoSection(rec.photos||[],true)}
       ${renderPdfSection(rec.pdfs||[],true)}
