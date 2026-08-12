@@ -398,7 +398,7 @@ const HACCP_G=[
 ];
 const HACCP_S=[
   {id:"hs1",title:"1. 제조 현장 및 생산·서류 관리",sub:null,items:[
-    {id:"hs1_1",조항:"1",항목:"작업장 밀폐 및 위생 관리",내용:"가. 작업장은 외부의 오염물질이나, 해충 및 설치류 등의 유입을 차단할 수 있도록 밀폐 또는 위생적으로 관리하여야 한다.\n나. 종업원은 작업장 출입 시 위생적인 상태로 입장하여야 한다.\n다. 작업장 내부는 정해진 주기에 따라 청소를 하여야 한다.",배점:3},    {id:"hs1_5",조항:"5",항목:"방충·방서 모니터링",내용:"포충등, 쥐덫, 바퀴벌레 포획도구 등에 포획된 개체수를 정해진 주기에 따라 확인하여야 한다.",배점:2},    {id:"hs1_10",조항:"10",항목:"제조설비 및 시설 관리",내용:"파손되거나 정상적으로 작동하지 아니하는 제조설비를 사용하여서는 아니되며 시설기준에 적합하게 관리하여야 한다.",배점:3},
+    {id:"hs1_1",조항:"1",항목:"작업장 밀폐 및 위생 관리",내용:"가. 작업장은 외부의 오염물질이나, 해충 및 설치류 등의 유입을 차단할 수 있도록 밀폐 또는 위생적으로 관리하여야 한다.\n나. 종업원은 작업장 출입 시 위생적인 상태로 입장하여야 한다.\n다. 작업장 내부는 정해진 주기에 따라 청소를 하여야 한다.",배점:3},    {id:"hs1_5",조항:"5",항목:"방충·방서 모니터링",na가능:true,내용:"포충등, 쥐덫, 바퀴벌레 포획도구 등에 포획된 개체수를 정해진 주기에 따라 확인하여야 한다.",배점:2},    {id:"hs1_10",조항:"10",항목:"제조설비 및 시설 관리",내용:"파손되거나 정상적으로 작동하지 아니하는 제조설비를 사용하여서는 아니되며 시설기준에 적합하게 관리하여야 한다.",배점:3},
     {id:"hs1_11",조항:"11",항목:"계측기 검교정",내용:"계측기는 정해진 주기에 따라 검교정을 실시하여야 한다.",배점:2},
     {id:"hs1_12",조항:"12",항목:"냉장·냉동고 온도 관리",내용:"냉장·냉동 창고의 온도를 적절히 관리하여야 한다.",배점:2},
     {id:"hs1_13",조항:"13",항목:"용수 관리 (세척이 있는 경우에 해당)",na가능:true,내용:"가. 식품의 제조·가공·조리·선별·처리에 사용되거나, 식품에 접촉할 수 있는 시설·설비, 기구·용기, 종업원 등의 세척에 사용되는 용수는 수돗물이나 먹는물 수질기준에 적합한 지하수이어야 한다.\n나. 지하수를 사용하는 경우 용수 수질검사를 정기적으로 실시하고 그 결과를 기록·유지하여야 한다.\n다. 필요한 경우 살균 또는 소독장치를 갖추고, 살균·소독 상태를 정기적으로 확인하여야 한다.",배점:3},
@@ -443,11 +443,17 @@ function grade(e,t,type){
     if(p>=90)return"S"; if(p>=80)return"A"; if(p>=70)return"B"; if(p>=60)return"C"; return"D";
   }
   if(type==="haccp_s"){
+    if(t<=28){ /* 5번+용수 모두 N/A → 만점28 */
+      if(e>=26)return"S"; if(e>=23)return"A"; if(e>=20)return"B"; if(e>=17)return"C"; return"D";
+    }
     if(t<=30){ /* 용수관리 N/A → 만점30 */
       if(e>=27)return"S"; if(e>=24)return"A"; if(e>=21)return"B"; if(e>=18)return"C"; return"D";
-    } else {  /* 만점33 */
-      if(e>=30)return"S"; if(e>=26)return"A"; if(e>=23)return"B"; if(e>=20)return"C"; return"D";
     }
+    if(t<=31){ /* 5번 N/A → 만점31 */
+      if(e>=28)return"S"; if(e>=25)return"A"; if(e>=22)return"B"; if(e>=19)return"C"; return"D";
+    }
+    /* 만점33 */
+    if(e>=30)return"S"; if(e>=26)return"A"; if(e>=23)return"B"; if(e>=20)return"C"; return"D";
   }
   const p=(e/t)*100;
   if(p>=90)return"A"; if(p>=80)return"B"; if(p>=70)return"C"; return"D";
@@ -522,15 +528,15 @@ function renderGradeGuide(clType){
       <div class="grade-guide-title">📊 등급별 점수 및 판정 기준 <span style="font-size:10px;font-weight:400;color:#90a4ae">(화면 전용 · PDF 미출력)</span></div>
       <div class="grade-guide-tables">
         <div class="grade-guide-block">
-          <h4>🥘 농·축·수산물 취급업소 — 만점 33점 (용수 N/A 시 30점)</h4>
+          <h4>🥘 농·축·수산물 취급업소 — 만점 33점 (N/A 항목에 따라 만점 변동)</h4>
           <table>
-            <thead><tr><th>등급</th><th>만점 33점</th><th>만점 30점 (용수 N/A)</th></tr></thead>
+            <thead><tr><th>등급</th><th>만점 33점</th><th>만점 31점 (5번 N/A)</th><th>만점 30점 (용수 N/A)</th><th>만점 28점 (5번+용수 N/A)</th></tr></thead>
             <tbody>
-              <tr><td><span class="gg-s">S</span></td><td>30 ~ 33점</td><td>27 ~ 30점</td></tr>
-              <tr><td><span class="gg-a">A</span></td><td>26 ~ 29점</td><td>24 ~ 26점</td></tr>
-              <tr><td><span class="gg-b">B</span></td><td>23 ~ 25점</td><td>21 ~ 23점</td></tr>
-              <tr><td><span class="gg-c">C</span></td><td>20 ~ 22점</td><td>18 ~ 20점</td></tr>
-              <tr><td><span class="gg-d">D</span></td><td>19점 이하</td><td>17점 이하</td></tr>
+              <tr><td><span class="gg-s">S</span></td><td>30 ~ 33점</td><td>28 ~ 31점</td><td>27 ~ 30점</td><td>26 ~ 28점</td></tr>
+              <tr><td><span class="gg-a">A</span></td><td>26 ~ 29점</td><td>25 ~ 27점</td><td>24 ~ 26점</td><td>23 ~ 25점</td></tr>
+              <tr><td><span class="gg-b">B</span></td><td>23 ~ 25점</td><td>22 ~ 24점</td><td>21 ~ 23점</td><td>20 ~ 22점</td></tr>
+              <tr><td><span class="gg-c">C</span></td><td>20 ~ 22점</td><td>19 ~ 21점</td><td>18 ~ 20점</td><td>17 ~ 19점</td></tr>
+              <tr><td><span class="gg-d">D</span></td><td>19점 이하</td><td>18점 이하</td><td>17점 이하</td><td>16점 이하</td></tr>
             </tbody>
           </table>
         </div>
@@ -1153,8 +1159,11 @@ function renderSection(sec,J,ro,bpMode,subType){
     }
     /* 비HACCP 고정 N/A 항목: 배점 0 */
     if(it.비haccp_na&&isBiHaccp) return 0;
-    /* 고정배점 모드: 데이터의 배점 사용 */
-    if(isCgmpFixed&&it.배점!==null&&it.배점!==undefined)return Number(it.배점);
+    /* 고정배점 모드: 판정이 N/A이면 배점 0 (calcScores와 일관성 유지) */
+    if(isCgmpFixed&&it.배점!==null&&it.배점!==undefined){
+      if(J&&J[it.id]==='N/A') return 0;
+      return Number(it.배점);
+    }
     var s=J[it.id+'_bp'];
     if(s!==undefined&&s!=='')return Number(s);
     if(!isDropdown&&it.배점!==null&&it.배점!==undefined)return Number(it.배점);
@@ -1163,6 +1172,7 @@ function renderSection(sec,J,ro,bpMode,subType){
   const secMax=isBigoOnly?0:sec.items.reduce((a,it)=>a+sbp(it),0);
   const secE=isBigoOnly?0:sec.items.reduce((a,it)=>{
     const v=J[it.id],bp=sbp(it);
+    if(v==='N/A') return a; /* N/A 항목 제외 (NaN 방지) */
     return a+(v!==undefined&&v!==""?Math.min(Number(v),bp):0);
   },0);
   return `<div class="scard">
