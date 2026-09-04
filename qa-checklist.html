@@ -1176,13 +1176,13 @@ function renderSummary(sections, J, clType){
         if(note.trim()) notes.push({sec:sec,it:it,rowNo:rowNo,note:note});
       });
     });
-    var count=notes.length;
+    var hyCount=notes.length;
     return `<div class="summary-card" style="border-left-color:#0f2547">
       <div class="summary-head" style="background:#e8eaf6;border-bottom:1px solid #c5cae9">
         <span class="summary-head-title" style="color:#0f2547">📋 평가 요약</span>
-        ${count>0?`<span class="summary-head-count" style="background:#c5cae9;color:#0f2547">총 ${count}건</span>`:""}
+        ${hyCount>0?`<span class="summary-head-count" style="background:#c5cae9;color:#0f2547">총 ${hyCount}건</span>`:""}
       </div>
-      ${count===0
+      ${hyCount===0
         ?`<div class="summary-empty">※ 기재된 비고 사항이 없습니다.</div>`
         :`<table class="summary-table">
           <thead><tr>
