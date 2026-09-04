@@ -410,10 +410,50 @@ const HACCP_S=[
     {id:"hs1_19",조항:"13",항목:"원산지 관리 서류(원산지 증명원, 거래명세서)",내용:"제품 생산에 투입되는 원재료의 원산지 증명원과 거래명세서를 기록 관리하여야 한다.",배점:3},,  ]},
 ];
 
+const HYGIENE_DATA=[
+  {id:"hy1",title:"1. 공통 시설기준",sub:null,items:[
+    {id:"hy1_1",순번:1,항목:"",내용:"건물의 구조는 제조하려는 위생용품의 특성에 따라 적정한 온도와 습도가 유지되고, 환기가 잘 되어야 한다."},
+    {id:"hy1_2",순번:2,항목:"",내용:"건물의 자재는 위생용품에 나쁜 영향을 주지 않고 위생용품을 오염시키지 않아야 한다."},
+  ]},
+  {id:"hy2",title:"2. 위생용품제조업 시설기준",sub:null,items:[
+    {id:"hy2_3",순번:3,항목:"작업장",내용:"작업장은 독립된 건물이거나 위생용품의 제조ㆍ가공ㆍ소분ㆍ위생처리 외의 용도로 사용되는 시설과 분리(별도의 방으로 분리하기 위하여 벽이나 층 등으로 구분하는 경우를 말한다. 이하 같다)되어야 한다. 다만, 제품 상호 간에 오염의 우려가 없는 경우에는 구획(칸막이ㆍ커튼 등으로 구분하는 경우를 말한다. 이하 같다) 또는 구분(선ㆍ줄 등으로 구분하는 경우를 말한다. 이하 같다)할 수 있다."},
+    {id:"hy2_4",순번:4,항목:"작업장",내용:"위생용품제조업의 작업장은 원료처리실ㆍ제조가공소분실ㆍ포장실과 그 밖에 위생용품의 제조ㆍ가공ㆍ소분에 필요한 작업시설을 말하고, 위생물수건처리업의 작업장은 탈진실·세탁실·포장실과 그 밖에 위생물수건의 위생처리에 필요한 작업시설을 말하며, 작업장 내의 작업시설은 각각 분리되거나 구획되어야 한다. 다만, 제조공정의 자동화 또는 시설ㆍ제품의 특수성으로 인하여 분리하거나 구획할 필요가 없다고 인정되는 경우로서 각각의 시설이 서로 구분될 수 있는 경우는 제외한다."},
+    {id:"hy2_5",순번:5,항목:"작업장",내용:"바닥은 콘크리트 등으로 내수처리를 하여야 하며, 배수가 잘 되어야 한다. 다만, 물을 사용하지 않고 위생상 위해 발생의 우려가 없는 경우는 제외한다."},
+    {id:"hy2_6",순번:6,항목:"작업장",내용:"내벽은 바닥으로부터 1.5미터까지 내수성으로 설비하거나 세균방지용 페인트로 도색하여야 한다. 다만, 물을 사용하지 않고 위생상 위해 발생의 우려가 없는 경우는 제외한다."},
+    {id:"hy2_7",순번:7,항목:"작업장",내용:"작업장의 내부 구조물, 벽, 바닥, 천장, 출입문, 창문 등은 내구성, 내부식성 등을 가지고, 세척ㆍ소독이 용이하여야 한다."},
+    {id:"hy2_8",순번:8,항목:"작업장",내용:"작업장 안에서 발생하는 악취ㆍ유해가스ㆍ매연ㆍ증기 등을 환기시키기에 충분한 환기시설을 갖추어야 한다."},
+    {id:"hy2_9",순번:9,항목:"작업장",내용:"작업장은 외부의 오염물질이나 해충, 설치류, 빗물 등의 유입을 차단할 수 있는 구조이여야 한다."},
+    {id:"hy2_10",순번:10,항목:"작업장",내용:"작업장은 폐기물ㆍ폐수 처리시설로부터 격리된 장소에 설치하여야 한다."},
+    {id:"hy2_11",순번:11,항목:"급수시설",내용:"수돗물이나 「먹는물관리법」 제5조에 따른 먹는물의 수질기준에 적합한 지하수 등을 공급할 수 있는 시설을 갖추어야 한다. (원료처리ㆍ제조ㆍ가공ㆍ소분 과정 중 물을 사용하지 않는 경우는 제외)"},
+    {id:"hy2_12",순번:12,항목:"급수시설",내용:"지하수 등을 사용하는 경우 취수원은 화장실ㆍ폐기물처리시설ㆍ동물사육장, 그 밖에 지하수가 오염될 우려가 있는 장소로부터 영향을 받지 않는 곳에 위치하여야 한다. (원료처리ㆍ제조ㆍ가공ㆍ소분 과정 중 물을 사용하지 않는 경우는 제외)"},
+    {id:"hy2_13",순번:13,항목:"창고 등의 시설",내용:"원료와 제품을 위생적으로 보관ㆍ관리할 수 있는 창고를 갖추어야 한다. 다만, 다음의 어느 하나에 해당하는 경우에는 창고를 갖추지 않을 수 있다.\n가) 창고를 갈음할 수 있는 냉동ㆍ냉장시설을 따로 갖춘 경우\n나) 같은 영업자가 위생용품제조업 또는 위생물수건처리업의 영업을 운영하면서 창고 등 시설을 공동으로 이용하는 경우\n다) 위생용품제조업자 또는 위생물수건처리업자가 의약품제조업, 의약외품제조업, 축산물가공업, 화장품제조업, 건강기능식품전문제조업, 식품제조ㆍ가공업, 식품첨가물제조업, 용기ㆍ포장지제조업 등 해당 영업소의 창고 등 시설을 공동으로 이용하는 경우"},
+    {id:"hy2_14",순번:14,항목:"창고 등의 시설",내용:"창고의 바닥에는 양탄자를 설치해서는 안 된다."},
+    {id:"hy2_15",순번:15,항목:"검사실",내용:"위생용품의 기준 및 규격을 검사할 수 있는 검사실을 갖추어야 한다. 다만, 다음의 어느 하나에 해당하는 경우에는 검사실을 갖추지 않을 수 있다.\n가) 법 제13조제2항에 따라 위생용품 시험ㆍ검사기관에 위탁하여 자가품질검사를 하려는 경우\n나) 같은 영업자가 다른 장소에 영업신고한 위생용품제조업 또는 위생물수건처리업의 영업소에 검사실을 갖추고 그 검사실에서 자가품질검사를 하려는 경우\n다) 같은 영업자가 설립한 위생용품 관련 연구ㆍ검사기관에서 자사제품에 대하여 자가품질검사를 하려는 경우\n라) 기업집단에 속하는 위생용품 관련 연구ㆍ검사기관 또는 계열회사가 영업신고한 같은 업종의 영업소의 검사실에서 자가품질검사를 하려는 경우\n마) 같은 영업자가 식품제조ㆍ가공업, 식품첨가물제조업, 축산물가공업, 건강기능식품전문제조업, 의약품 또는 의약외품 제조업, 화장품제조업 등의 영업을 하면서 해당 영업소에 검사실 또는 시험실을 갖추고 자가품질검사를 하려는 경우"},
+    {id:"hy2_16",순번:16,항목:"검사실",내용:"검사실을 갖추는 경우에는 자가품질검사에 필요한 기계ㆍ기구 및 시약류를 갖추어야 한다."},
+    {id:"hy2_17",순번:17,항목:"기계·기구 및 설비류",내용:"영업자는 영업의 종류별로 위생용품(위생물수건은 제외한다)을 제조ㆍ가공ㆍ소분하거나 위생물수건을 세척ㆍ살균ㆍ소독 등 위생처리하여 포장ㆍ대여하는 데 필요한 기계ㆍ기구류 및 설비를 갖추고, 정기적으로 점검하여 위생용품의 제조 및 품질관리에 지장이 없도록 하여야 한다."},
+    {id:"hy2_18",순번:18,항목:"시설기준 적용 특례",내용:"위생용품제조업자가 창고의 공간이 부족하여 원료 또는 제품을 보관할 수 없는 경우에는 영업신고를 한 영업소의 소재지와 다른 곳(신고관청의 관할 구역 안에 있는 경우로 한정한다)에 설치하거나 임차한 창고에 일시적으로 보관할 수 있다."},
+  ]},
+  {id:"hy3",title:"3. 영업자 공통 준수사항",sub:null,items:[
+    {id:"hy3_19",순번:19,항목:"공통사항",내용:"영업자와 그 종업원은 위생용품의 제조ㆍ가공ㆍ소분 또는 위생처리 과정에서 보건위생상 위해가 없도록 작업장 및 기구 등을 위생적으로 관리하고, 정기적으로 점검하여 작업에 지장이 없도록 유지ㆍ관리하여야 한다."},
+    {id:"hy3_20",순번:20,항목:"공통사항",내용:"영업신고증은 영업소 안에 보관하여야 한다."},
+    {id:"hy3_21",순번:21,항목:"공통사항",내용:"종업원을 고용한 영업자는 위생교육 계획을 수립하여 영업에 종사하는 종업원에 대하여 정기적으로 위생교육을 실시하여야 하고, 그 결과를 기록하여 1년간 보관하여야 한다."},
+  ]},
+  {id:"hy4",title:"4. 위생용품제조업자 및 그 종업원의 준수사항",sub:null,items:[
+    {id:"hy4_22",순번:22,항목:"",내용:"생산 및 작업기록에 관한 서류와 원료의 입고ㆍ출고ㆍ사용에 대한 관계 서류(원료출납관계서류)를 작성하되, 이를 거짓으로 작성해서는 안 된다. 이 경우 해당 서류는 최종 기재일부터 3년간 보관하여야 한다."},
+    {id:"hy4_23",순번:23,항목:"",내용:"제품의 거래 기록을 작성하여야 하고, 최종 기재일부터 2년간 보관하여야 한다."},
+    {id:"hy4_24",순번:24,항목:"",내용:"유통기한이 지난 제품을 판매하거나 판매의 목적으로 진열ㆍ보관ㆍ운반해서는 안 되며, 이를 위생용품의 제조ㆍ가공ㆍ소분에 사용해서도 안 된다(유통기한이 정해진 제품에 대해서만 적용된다)."},
+    {id:"hy4_25",순번:25,항목:"",내용:"수돗물이 아닌 지하수 등을 위생용품의 제조ㆍ가공 등에 사용한 경우에는 먹는물관리법에 따른 먹는물 수질검사기관에서 수질기준에 따라 검사를 받아 마시기에 적합하다고 인정된 물을 사용하여야 한다. 다만, 둘 이상의 업소가 같은 건물에서 같은 수원을 사용하는 경우에는 하나의 업소에 대한 시험 결과로 해당 업소에 대한 검사를 갈음할 수 있다."},
+    {id:"hy4_26",순번:26,항목:"",내용:"위생용품제조업자는 자사제품의 원료 또는 외화획득용 원료로 수입한 위생용품이 부패, 변질 또는 유통기한이 지나 폐기한 경우에는 그 사실을 증명하는 자료를 작성하고, 최종 작성일부터 3년간 보관하여야 한다."},
+    {id:"hy4_27",순번:27,항목:"",내용:"자가품질검사를 하는 위생용품제조업자는 검사설비에 검사 결과의 변경 시 그 변경내용이 기록ㆍ저장되는 시스템을 설치ㆍ운영하여야 한다."},
+    {id:"hy4_28",순번:28,항목:"",내용:"위생용품제조업자는 다른 위생용품제조업자에게 위탁하여 위생용품을 제조ㆍ가공ㆍ소분 또는 포장하는 경우에는 위탁한 그 위생용품제조업자에 대하여 반기별 1회 이상 위생관리상태 등을 점검하여야 한다."},
+    {id:"hy4_29",순번:29,항목:"",내용:"위생용품제조업자는 위생용품을 원료로 사용하는 경우에는 법 제3조제1항ㆍ제2항 또는 제8조제1항에 따른 신고를 하고 제조ㆍ가공ㆍ소분하거나 수입한 위생용품을 사용하여야 한다."},
+  ]},
+];
 const TYPES={
   cgmp:{label:"💄 화장품",title:"화장품 제조 및 품질관리기준 실시상황 평가",ref:"[식품의약품안전처 고시 제2024-46호 별표 2 준용]",data:CGMP_DATA,유형:"화장품 제조소 평가",배점모드:"cgmp_fixed"},
   haccp_g:{label:"🍱 식품 제조·가공업",title:"식품(식품첨가물 포함) 제조·가공업 실시상황 평가표",ref:"[식품의약품안전처 고시 관련 별표 4 준용]",data:HACCP_G,유형:"일반 HACCP, 소규모 HACCP, 비HACCP 제조·가공업 평가",배점모드:"hg_fixed"},
   haccp_s:{label:"🥘 농·축·수산물 취급업소",title:"농·축·수산물 취급업소 실시상황 평가표",ref:"[식품의약품안전처 고시 관련 별표 4 준용]",data:HACCP_S,유형:"농·축·수산물 취급업소 평가",배점모드:"hs_fixed"},
+  hygiene:{label:"🧻 위생용품",title:"위생용품 제조업 실시상황 평가",ref:"[위생용품 관리법 시행규칙 별표1,(영업의 종류별 시설기준) 별표2(영업자 등의 준수사항) 준용]",data:HYGIENE_DATA,유형:"위생용품제조업 평가",배점모드:"비고만"},
 };
 
 /* ════════════════════════════════════════
@@ -780,7 +820,7 @@ function render(){
               : `<input value="${esc(S.header.심사자)}" data-hk="심사자" placeholder="심사자 이름"/>`
             }
           </div>
-          <div class="ff"><label>평 가 유 형</label>
+          ${S.clType!=="hygiene"?`<div class="ff"><label>평 가 유 형</label>
             ${S.clType==="cgmp"
               ? `<select onchange="setH('평가유형서브',this.value)">
                   <option value="CGMP 제조사" ${(S.header.평가유형서브||"CGMP 제조사")==="CGMP 제조사"?"selected":""}>CGMP 제조사</option>
@@ -799,7 +839,7 @@ function render(){
                   <option value="수산물" ${S.header.평가유형서브==="수산물"?"selected":""}>수산물</option>
                 </select>`
               : `<input value="${ct.유형}" readonly/>`}
-          </div>
+          </div>`:""}
           ${S.clType==="haccp_g"?`<div class="ff"><label>점 수 입 력 방 식</label>
             <select onchange="setH('점수입력모드',this.value)">
               <option value="자동계산" ${(S.header.점수입력모드||"자동계산")==="자동계산"?"selected":""}>자동 계산 (항목별 점수 입력)</option>
@@ -818,8 +858,16 @@ function render(){
               <option value="조건부 적합" ${S.header.적합여부==="조건부 적합"?"selected":""}>조건부 적합</option>
             </select>
           </div>`:""}
+          ${S.clType==="hygiene"?`<div class="ff"><label>적 합 여 부</label>
+            <select onchange="setH('적합여부',this.value)">
+              <option value="" ${!S.header.적합여부?"selected":""}>선택</option>
+              <option value="적합" ${S.header.적합여부==="적합"?"selected":""}>적합</option>
+              <option value="조건부 적합" ${S.header.적합여부==="조건부 적합"?"selected":""}>조건부 적합</option>
+              <option value="부적합" ${S.header.적합여부==="부적합"?"selected":""}>부적합</option>
+            </select>
+          </div>`:""}
         </div>
-        <div class="sbar">
+        ${S.clType!=="hygiene"?`<div class="sbar">
           ${isManual
             ?`<div class="si"><div class="sv">${isNaN(manualPct)?"-":manualPct.toFixed(1)}</div><div class="sl">입력 점수(%)</div></div>
                <div class="si">
@@ -842,7 +890,11 @@ function render(){
                ${S.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(displayed)}">${displayed}</span></div>`:""}`
           }
         </div>
-        ${renderGradeGuide(S.clType)}
+        ${renderGradeGuide(S.clType)}`:
+        `<div class="sbar">
+          <div class="si"><span class="sbadge ${badgeCls(S.header.적합여부||'')}">${S.header.적합여부||"미선택"}</span><div class="sl" style="margin-top:4px">적합여부</div></div>
+        </div>`
+        }
       </div>
       <div class="abar">
         <button class="btn btn-dark" onclick="doSave()">${S.editIdx!==null?"✏️ 수정 저장":"💾 저장 (공유)"}</button>
@@ -853,8 +905,8 @@ function render(){
       </div>
       ${ct.data.map(sec=>renderSection(sec,S.J,false,ct.배점모드,S.header.평가유형서브)).join("")}
       ${renderEtcSection(S.J,false)}
-      ${renderSummary(ct.data,S.J)}
-      <div class="total-bar">
+      ${renderSummary(ct.data,S.J,S.clType)}
+      ${S.clType!=="hygiene"?`<div class="total-bar">
         <span class="tl">종 합 총 점</span>
         <span class="tr">
           ${isManual
@@ -868,7 +920,7 @@ function render(){
                ${S.clType!=="haccp_s"?`&nbsp;<span class="sbadge ${badgeCls(displayed)}" style="font-size:12px">${displayed}</span>`:""}`
           }
         </span>
-      </div>
+      </div>`:""}
       ${renderPhotoSection(S.photos,false)}
       ${renderPdfSection(S.pdfs,false)}
       ${renderPhotoPrint(S.photos)}
@@ -879,7 +931,7 @@ function render(){
   else if(S.view==="records"){
     /* 검색 필터 적용 */
     const filtered=S.records.filter((rec,i)=>{
-      const rj=judge(rec.earned,rec.total,rec.clType);
+      const rj=rec.clType==="hygiene"?(rec.header.적합여부||"-"):judge(rec.earned,rec.total,rec.clType);
       const result=rj;
       const sh=S.search;
       if(sh.업소명&&!((rec.header.업소명||"").includes(sh.업소명))) return false;
@@ -892,7 +944,7 @@ function render(){
     });
     const filteredIdx=S.records.map((rec,i)=>i).filter(i=>{
       const rec=S.records[i];
-      const rj=judge(rec.earned,rec.total,rec.clType);
+      const rj=rec.clType==="hygiene"?(rec.header.적합여부||"-"):judge(rec.earned,rec.total,rec.clType);
       const result=rj;
       const sh=S.search;
       if(sh.업소명&&!((rec.header.업소명||"").includes(sh.업소명))) return false;
@@ -935,6 +987,7 @@ function render(){
               <option value="cgmp" ${S.search.유형==="cgmp"?"selected":""}>💄 화장품 (CGMP)</option>
               <option value="haccp_g" ${S.search.유형==="haccp_g"?"selected":""}>🍱 식품 제조·가공업</option>
               <option value="haccp_s" ${S.search.유형==="haccp_s"?"selected":""}>🥘 농·축·수산물 취급업소</option>
+              <option value="hygiene" ${S.search.유형==="hygiene"?"selected":""}>🧻 위생용품</option>
             </select>
           </div>
           <div class="sf">
@@ -968,9 +1021,10 @@ function render(){
           ?`<div class="empty"><div style="font-size:44px;margin-bottom:14px">🔍</div><div>검색 조건에 맞는 기록이 없습니다.</div><div style="font-size:12px;margin-top:7px;color:#90a4ae">필터를 변경하거나 초기화해 보세요.</div></div>`
           :filteredIdx.map(i=>{
             const rec=S.records[i];
-            const rj=judge(rec.earned,rec.total,rec.clType);
-            const icon=rec.clType==="cgmp"?"💄":rec.clType==="haccp_g"?"🍱":"🥘";
+            const rj=rec.clType==="hygiene"?(rec.header.적합여부||"-"):judge(rec.earned,rec.total,rec.clType);
+            const icon=rec.clType==="cgmp"?"💄":rec.clType==="haccp_g"?"🍱":rec.clType==="hygiene"?"🧻":"🥘";
             const resultVal=rj;
+            const isHygieneRec=rec.clType==="hygiene";
             return `<div class="rcard" onclick="viewRec(${i})">
               <div style="font-size:26px">${icon}</div>
               <div class="rmeta">
@@ -979,9 +1033,11 @@ function render(){
                 <div class="rdate">저장: ${new Date(rec.savedAt).toLocaleString("ko-KR")}</div>
               </div>
               <div class="rscore">
-                <div class="grade-badge ${gradeCls(grade(rec.earned,rec.total,rec.clType))}"><span style="font-size:22px;font-weight:700;line-height:1">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:10px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span></div>
+                ${isHygieneRec
+                  ?`<span class="sbadge ${badgeCls(resultVal)}" style="font-size:13px;margin-bottom:4px;display:inline-block">${resultVal||"-"}</span>`
+                  :`<div class="grade-badge ${gradeCls(grade(rec.earned,rec.total,rec.clType))}"><span style="font-size:22px;font-weight:700;line-height:1">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:10px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span></div>
                 <div style="font-size:11px;color:#78909c">${rec.earned}/${rec.total}점</div>
-                ${rec.clType!=="haccp_s"?`<span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>`:""}
+                ${rec.clType!=="haccp_s"?`<span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>`:""}`}
                 <div style="display:flex;gap:5px;margin-top:8px;justify-content:flex-end">
                   <button class="btn-sm" style="color:#1565c0;border-color:#1565c0;position:static" onclick="event.stopPropagation();editRec(${i})">수정</button>
                   <button class="btn-sm" style="position:static" onclick="event.stopPropagation();delRec(${i})">삭제</button>
@@ -997,7 +1053,8 @@ function render(){
   else if(S.view==="detail"&&S.selRec){
     const rec=S.selRec;
     const rt=TYPES[rec.clType];
-    const rj=judge(rec.earned,rec.total,rec.clType);
+    const rj=rec.clType==="hygiene"?(rec.header.적합여부||"-"):judge(rec.earned,rec.total,rec.clType);
+    const isHygieneDetail=rec.clType==="hygiene";
     /* 수기입력 모드 판별 */
     const recIsManual=(rec.clType==="haccp_g"&&rec.header.점수입력모드==="수기입력");
     const recManualPct=recIsManual?parseFloat(rec.header.수기입력점수||rec.earned||0):null;
@@ -1015,6 +1072,15 @@ function render(){
       :null;
     /* 헤더 필드 배열 */
     const detailFields=(function(){
+      if(isHygieneDetail){
+        return[
+          ["업소명",rec.header.업소명||"-"],
+          ["심사일자",rec.header.심사일자],
+          ["소재지",rec.header.소재지||"-"],
+          ["심사자",rec.header.심사자||"-"],
+          ["적합여부",rec.header.적합여부||"-"],
+        ];
+      }
       var base=[
         ["업소명",rec.header.업소명||"-"],
         ["심사일자",rec.header.심사일자],
@@ -1034,7 +1100,9 @@ function render(){
           ${detailFields.map(([l,v])=>`
           <div class="ff"><label>${l}</label><div style="padding:7px 10px;background:#f5f5f5;border-radius:7px;font-size:13px;border:1px solid #e0e0e0">${esc(String(v||"-"))}</div></div>`).join("")}
         </div>
-        <div class="sbar" style="margin-top:12px">
+        ${isHygieneDetail
+          ?`<div class="sbar" style="margin-top:12px"><div class="si"><span class="sbadge ${badgeCls(rec.header.적합여부||'')}">${rec.header.적합여부||"-"}</span><div class="sl" style="margin-top:4px">적합여부</div></div></div>`
+          :`<div class="sbar" style="margin-top:12px">
           ${recIsManual
             ?`<div class="si"><div class="sv">${isNaN(recManualPct)?"-":recManualPct}</div><div class="sl">입력 점수(%)</div></div>
                <div class="si"><div class="grade-badge ${gradeCls(recManualGrade||'')}"><span class="grade-letter">${recManualGrade||"-"}</span><span class="grade-pct">(수기)</span></div><div class="sl">등급</div></div>
@@ -1045,7 +1113,7 @@ function render(){
                ${rec.clType!=="haccp_s"?`<div class="si"><span class="sbadge ${badgeCls(rj)}">${rj}</span></div>`:""}`
           }
         </div>
-        ${renderGradeGuide(rec.clType)}
+        ${renderGradeGuide(rec.clType)}`}
       </div>
       <div class="abar">
         <button class="btn btn-dark" onclick="editRec(S.selRecIdx)">✏️ 수정</button>
@@ -1055,14 +1123,14 @@ function render(){
       </div>
       ${rt.data.map(sec=>renderSection(sec,rec.J,true,rt.배점모드,rec.header.평가유형서브)).join("")}
       ${renderEtcSection(rec.J,true)}
-      ${renderSummary(rt.data,rec.J)}
-      <div class="total-bar">
+      ${renderSummary(rt.data,rec.J,rec.clType)}
+      ${isHygieneDetail?"":`<div class="total-bar">
         <span class="tl">종 합 총 점</span>
         <span class="tr">${recIsManual
           ?`<span style="font-size:16px">${recManualPct}%</span> &nbsp;<span class="${gradeCls(recManualGrade||'')}" style="font-size:20px;font-weight:700">${recManualGrade||"-"}</span><span style="font-size:12px;opacity:.8"> (수기입력)</span> &nbsp;<span class="sbadge ${badgeCls(recManualJd)}" style="font-size:12px">${recManualJd}</span>`
           :`${rec.earned} / ${rec.total}점 &nbsp;<span class="${gradeCls(grade(rec.earned,rec.total,rec.clType))}" style="font-size:20px;font-weight:700">${grade(rec.earned,rec.total,rec.clType)}</span><span style="font-size:12px;opacity:.8"> (${pct(rec.earned,rec.total)}%)</span>${rec.clType!=="haccp_s"?` &nbsp;<span class="sbadge ${badgeCls(rj)}" style="font-size:12px">${rj}</span>`:""}`
         }</span>
-      </div>
+      </div>`}
       ${renderPhotoSection(rec.photos||[],true)}
       ${renderPdfSection(rec.pdfs||[],true)}
       ${renderPhotoPrint(rec.photos||[])}
@@ -1095,8 +1163,47 @@ function render(){
   if(S.view==="records") attachSearchListeners();
 }
 
-/* ── 부적합 요약 렌더 ── */
-function renderSummary(sections, J){
+/* ── 부적합/평가 요약 렌더 ── */
+function renderSummary(sections, J, clType){
+  /* 위생용품: 비고 내용 모아서 "평가 요약"으로 표시 */
+  if(clType==="hygiene"){
+    const notes=[];
+    var rowNo=0;
+    sections.forEach(function(sec){
+      sec.items.forEach(function(it){
+        rowNo++;
+        var note=J[it.id+"_note"]||"";
+        if(note.trim()) notes.push({sec:sec,it:it,rowNo:rowNo,note:note});
+      });
+    });
+    var count=notes.length;
+    return `<div class="summary-card" style="border-left-color:#0f2547">
+      <div class="summary-head" style="background:#e8eaf6;border-bottom:1px solid #c5cae9">
+        <span class="summary-head-title" style="color:#0f2547">📋 평가 요약</span>
+        ${count>0?`<span class="summary-head-count" style="background:#c5cae9;color:#0f2547">총 ${count}건</span>`:""}
+      </div>
+      ${count===0
+        ?`<div class="summary-empty">※ 기재된 비고 사항이 없습니다.</div>`
+        :`<table class="summary-table">
+          <thead><tr>
+            <th class="sum-no">No.</th>
+            <th class="sum-section">섹션</th>
+            <th class="sum-항목">평가 항목</th>
+            <th class="sum-note">비고 내용</th>
+          </tr></thead>
+          <tbody>
+          ${notes.map(function(r,i){return`<tr>
+            <td class="sum-no">${i+1}</td>
+            <td class="sum-section">${esc(r.sec.title)}</td>
+            <td class="sum-항목">${r.it.항목?esc(r.it.항목):`${r.rowNo}번 항목`}</td>
+            <td class="sum-note">${esc(r.note)}</td>
+          </tr>`;}).join("")}
+          </tbody>
+        </table>`
+      }
+    </div>`;
+  }
+  /* 기존 타입: 주요 부적합 사항 요약 */
   const items=[];
   sections.forEach(sec=>{
     sec.items.forEach(it=>{
@@ -1628,7 +1735,7 @@ function renderFilteredList(){
   const configured=isConfigured();
   const filteredIdx=S.records.map((_,i)=>i).filter(i=>{
     const rec=S.records[i];
-    const rj=judge(rec.earned,rec.total,rec.clType);
+    const rj=rec.clType==="hygiene"?(rec.header.적합여부||"-"):judge(rec.earned,rec.total,rec.clType);
     const result=rj;
     const sh=S.search;
     if(sh.업소명&&!((rec.header.업소명||"").includes(sh.업소명))) return false;
@@ -1649,8 +1756,9 @@ function renderFilteredList(){
   } else {
     html+=filteredIdx.map(i=>{
       const rec=S.records[i];
-      const rj=judge(rec.earned,rec.total,rec.clType);
-      const icon=rec.clType==="cgmp"?"💄":rec.clType==="haccp_g"?"🍱":"🥘";
+      const isHR=rec.clType==="hygiene";
+      const rj=isHR?(rec.header.적합여부||"-"):judge(rec.earned,rec.total,rec.clType);
+      const icon=rec.clType==="cgmp"?"💄":rec.clType==="haccp_g"?"🍱":isHR?"🧻":"🥘";
       const resultVal=rj;
       return `<div class="rcard" onclick="viewRec(${i})">
         <div style="font-size:26px">${icon}</div>
@@ -1660,9 +1768,11 @@ function renderFilteredList(){
           <div class="rdate">저장: ${new Date(rec.savedAt).toLocaleString("ko-KR")}</div>
         </div>
         <div class="rscore">
-          <div class="rpct">${pct(rec.earned,rec.total)}%</div>
+          ${isHR
+            ?`<span class="sbadge ${badgeCls(resultVal)}" style="font-size:13px;display:inline-block">${resultVal}</span>`
+            :`<div class="rpct">${pct(rec.earned,rec.total)}%</div>
           <div style="font-size:11px;color:#78909c">${rec.earned}/${rec.total}점</div>
-          <span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>
+          <span class="sbadge ${badgeCls(resultVal)}" style="font-size:11px;margin-top:3px;display:inline-block">${resultVal}</span>`}
         </div>
         <button class="btn-sm" onclick="event.stopPropagation();delRec(${i})">삭제</button>
       </div>`;
@@ -1943,7 +2053,7 @@ function refreshSummaryOnly(){
   var summaryEl=document.querySelector('.summary-card');
   if(summaryEl){
     var tmp=document.createElement('div');
-    tmp.innerHTML=renderSummary(ct.data,S.J);
+    tmp.innerHTML=renderSummary(ct.data,S.J,S.clType);
     if(tmp.firstChild) summaryEl.replaceWith(tmp.firstChild);
     /* 교체 후 리스너 재부착 불필요 (summary는 클릭 인터랙션 없음) */
   }
