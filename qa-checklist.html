@@ -471,8 +471,7 @@ const MEDI_EX_DATA=[
     {id:"me1_18",순번:18,항목:"",내용:"나. 실내의 배관은 청소하기 쉽고 배관이 벽을 통과할 경우 틈이 없도록 마무리"},
     {id:"me1_19",순번:19,항목:"",내용:"다. 출입구(비상구 제외)와 창은 외부와 직접 통하지 아니하도록 되어 있을 것"},
     {id:"me1_20",순번:20,항목:"",내용:"라. 작업실은 작업원 외의 자의 통로가 되지 아니하도록 되어 있을 것"},
-    {id:"me1_21",순번:21,항목:"제품의 포장작업실",내용:""},
-    {id:"me1_22",순번:22,항목:"용기 세척작업실",내용:""},
+    {id:"me1_22",순번:22,항목:"",내용:"용기 세척작업실"},
     {id:"me1_23",순번:23,항목:"",내용:"제조하는 의약외품의 종류·제형 또는 제조방법에 따라 오염을 방지"},
     {id:"me1_24",순번:24,항목:"",내용:"적절한 온도를 유지하며 습도를 유지할 수 있는 공기조화장치"},
     {id:"me1_25",순번:25,항목:"",내용:"제조과정 중의 반제품을 품질에 영향을 미치지 아니하도록 보관할 수 있는 시설"},
@@ -1362,6 +1361,24 @@ function renderSection(sec,J,ro,bpMode,subType){
     if(!isDropdown&&it.배점!==null&&it.배점!==undefined)return Number(it.배점);
     return 0;
   };
+  /* 비고만 모드: 가/나/다/라 또는 1)/2)... 패턴의 항목을 앞 항목에 rowspan으로 묶기 */
+  var rowspanMap={};
+  if(isBigoOnly){
+    var isSubIt=function(it){
+      if(it.항목!=="") return false;
+      var c=it.내용||"";
+      return /^[가나다라마바사아자차카타파하]\./.test(c)||/^\d+\)/.test(c);
+    };
+    var si=0;
+    while(si<sec.items.length){
+      var hit=sec.items[si];
+      if(hit.항목&&hit.항목!==""){
+        var span=1,sj=si+1;
+        while(sj<sec.items.length&&isSubIt(sec.items[sj])){rowspanMap[sec.items[sj].id]=0;span++;sj++;}
+        rowspanMap[hit.id]=span;si=sj;
+      }else{rowspanMap[hit.id]=1;si++;}
+    }
+  }
   const secMax=isBigoOnly?0:sec.items.reduce((a,it)=>a+sbp(it),0);
   const secE=isBigoOnly?0:sec.items.reduce((a,it)=>{
     const v=J[it.id],bp=sbp(it);
@@ -1441,9 +1458,12 @@ function renderSection(sec,J,ro,bpMode,subType){
         var noteCell=ro
           ?'<span style="font-size:11px;color:#546e7a">'+esc(note)+'</span>'
           :'<textarea class="noteinput" rows="1" data-note-id="'+it.id+'">'+esc(note)+'</textarea>';
+        var rs=isBigoOnly?(rowspanMap[it.id]!==undefined?rowspanMap[it.id]:1):1;
+        var skipHk=isBigoOnly&&rs===0;
+        var hkCell=skipHk?'':'<td class="c항목"'+(rs>1?' rowspan="'+rs+'" style="vertical-align:middle;text-align:center;background:#f0f4fa;font-weight:600;border-right:2px solid #c5cae9"':'')+'>'+(rs>1?formatItemName(it.항목):formatItemName(it.항목))+'</td>';
         return '<tr>'
           +'<td class="c조항">'+(++_renderRowNo)+'</td>'
-          +'<td class="c항목">'+formatItemName(it.항목)+'</td>'
+          +hkCell
           +'<td class="c내용">'+esc(it.내용).replace(/\n/g,'<br>')+'</td>'
           +(isBigoOnly?'':'<td class="c배점">'+bpCell+'</td><td class="c판정">'+judgeCell+'</td><td class="c득점">'+scoreCell+'</td>')
           +'<td class="c비고"'+(isBigoOnly?' style="width:30%"':'')+'>'+noteCell+'</td>'
