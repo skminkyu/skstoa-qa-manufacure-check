@@ -1460,13 +1460,17 @@ function renderSection(sec,J,ro,bpMode,subType){
           :'<textarea class="noteinput" rows="1" data-note-id="'+it.id+'">'+esc(note)+'</textarea>';
         var rs=isBigoOnly?(rowspanMap[it.id]!==undefined?rowspanMap[it.id]:1):1;
         var skipHk=isBigoOnly&&rs===0;
-        var hkCell=skipHk?'':'<td class="c항목"'+(rs>1?' rowspan="'+rs+'" style="vertical-align:middle;text-align:center;background:#f0f4fa;font-weight:600;border-right:2px solid #c5cae9"':'')+'>'+(rs>1?formatItemName(it.항목):formatItemName(it.항목))+'</td>';
-        return '<tr>'
-          +'<td class="c조항">'+(++_renderRowNo)+'</td>'
+        /* 그룹 시작(rs>1) 행에 굵은 상단 테두리로 구분 */
+        var groupBorder=isBigoOnly&&rs>1?'border-top:2px solid #7986cb':'';
+        var trStyle=groupBorder?(' style="'+groupBorder+'"'):'';
+        var hkStyle='vertical-align:middle;text-align:center;background:#e8eaf6;font-weight:700;border-right:2px solid #7986cb;color:#0f2547;font-size:12px';
+        var hkCell=skipHk?'':'<td class="c항목"'+(rs>1?' rowspan="'+rs+'" style="'+hkStyle+'"':'')+'>'+(formatItemName(it.항목))+'</td>';
+        return '<tr'+trStyle+'>'
+          +'<td class="c조항"'+(isBigoOnly&&rs>1?' style="border-top:2px solid #7986cb"':skipHk?' style="border-top:1px solid #e8eaf6"':'')+'>'+(++_renderRowNo)+'</td>'
           +hkCell
-          +'<td class="c내용">'+esc(it.내용).replace(/\n/g,'<br>')+'</td>'
+          +'<td class="c내용"'+(isBigoOnly&&rs>1?' style="border-top:2px solid #7986cb"':'')+'>'+(esc(it.내용).replace(/\n/g,'<br>'))+'</td>'
           +(isBigoOnly?'':'<td class="c배점">'+bpCell+'</td><td class="c판정">'+judgeCell+'</td><td class="c득점">'+scoreCell+'</td>')
-          +'<td class="c비고"'+(isBigoOnly?' style="width:30%"':'')+'>'+noteCell+'</td>'
+          +'<td class="c비고"'+(isBigoOnly?' style="width:30%'+(rs>1?';border-top:2px solid #7986cb':'')+'"':'')+'>'+noteCell+'</td>'
           +'</tr>';
       }).join("")}
       </tbody>
