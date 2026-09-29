@@ -708,6 +708,32 @@ function saveBackup(arr){
   try{if(Array.isArray(arr)&&arr.length>0)localStorage.setItem(RECORDS_BACKUP_KEY,JSON.stringify(arr));}catch(_){}
 }
 
+/* gzip 압축 → base64 */
+async function compressJson(str){
+  const cs=new CompressionStream('gzip');
+  const w=cs.writable.getWriter();
+  w.write(new TextEncoder().encode(str));w.close();
+  const chunks=[];const r=cs.readable.getReader();
+  while(true){const{done,value}=await r.read();if(done)break;chunks.push(value);}
+  const all=new Uint8Array(chunks.reduce((a,c)=>a+c.length,0));
+  let off=0;for(const c of chunks){all.set(c,off);off+=c.length;}
+  let bin='';for(let i=0;i<all.length;i++)bin+=String.fromCharCode(all[i]);
+  return 'GZIP1:'+btoa(bin);
+}
+/* base64 → 압축 해제 */
+async function decompressJson(b64){
+  const bin=atob(b64);
+  const bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  const ds=new DecompressionStream('gzip');
+  const w=ds.writable.getWriter();w.write(bytes);w.close();
+  const chunks=[];const r=ds.readable.getReader();
+  while(true){const{done,value}=await r.read();if(done)break;chunks.push(value);}
+  const all=new Uint8Array(chunks.reduce((a,c)=>a+c.length,0));
+  let off=0;for(const c of chunks){all.set(c,off);off+=c.length;}
+  return new TextDecoder().decode(all);
+}
+
 async function cloudLoad(){
   try{
     /* 읽기는 raw URL로 인증 없이 가능 (secret gist도 ID 알면 접근 가능) */
@@ -720,7 +746,15 @@ async function cloudLoad(){
     if(!r.ok){console.warn("cloudLoad error",r.status);return null;}
     const text=await r.text();
     let arr=null;
-    try{arr=JSON.parse(text);}catch(_){arr=[];}
+    try{
+      /* GZIP1: 접두사 = 압축 데이터 */
+      if(text.startsWith('GZIP1:')){
+        const json=await decompressJson(text.slice(6));
+        arr=JSON.parse(json);
+      }else{
+        arr=JSON.parse(text);
+      }
+    }catch(_){arr=[];}
     if(!Array.isArray(arr)) arr=[];
     console.log("cloudLoad: "+arr.length+"건 로드 완료 (Gist)");
     if(arr.length>0) saveBackup(arr);
@@ -758,7 +792,8 @@ async function cloudSave(records){
   }
   if(!isConfigured())return false;
   try{
-    const content=JSON.stringify(records);
+    /* 압축 저장: 14MB → ~2-3MB */
+    const content=await compressJson(JSON.stringify(records));
     const ctrl=new AbortController();
     const timer=setTimeout(()=>ctrl.abort(),15000);
     let r;
