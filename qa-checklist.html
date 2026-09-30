@@ -1598,7 +1598,7 @@ function renderSection(sec,J,ro,bpMode,subType){
    이벤트 핸들러
 ════════════════════════════════════════ */
 function goHome(){S.view="home";pushState('home');render();}
-function goRecords(){S.view="records";pushState('records');render();}
+function goRecords(){S.view="records";pushState('records');render();doRefresh();}
 
 function startNew(type){
   S.clType=type;
