@@ -806,27 +806,60 @@ async function decompressJson(b64){
   return new TextDecoder().decode(all);
 }
 
+async function _parseCloudText(text){
+  try{
+    if(text.startsWith('GZIP1:')){
+      const json=await decompressJson(text.slice(6));
+      return JSON.parse(json);
+    }else{
+      return JSON.parse(text);
+    }
+  }catch(_){return [];}
+}
+
 async function cloudLoad(){
   try{
-    /* 읽기는 raw URL로 인증 없이 가능 (secret gist도 ID 알면 접근 가능) */
-    const rawUrl="https://gist.githubusercontent.com/"+GIST_OWNER+"/"+GIST_ID+"/raw/"+GIST_FILE+"?t="+Date.now();
-    const lCtrl=new AbortController();
-    const lTimer=setTimeout(()=>lCtrl.abort(),10000);
-    let r;
-    try{r=await fetch(rawUrl,{signal:lCtrl.signal});}
-    finally{clearTimeout(lTimer);}
-    if(!r.ok){console.warn("cloudLoad error",r.status);return null;}
-    const text=await r.text();
-    let arr=null;
-    try{
-      /* GZIP1: 접두사 = 압축 데이터 */
-      if(text.startsWith('GZIP1:')){
-        const json=await decompressJson(text.slice(6));
-        arr=JSON.parse(json);
-      }else{
-        arr=JSON.parse(text);
-      }
-    }catch(_){arr=[];}
+    let text=null;
+
+    /* ① 토큰 있을 때: 인증된 API 사용 → CDN 캐시 완전 우회, 항상 최신 데이터 */
+    if(isConfigured()){
+      try{
+        const ctrl=new AbortController();
+        const timer=setTimeout(()=>ctrl.abort(),10000);
+        let r;
+        try{r=await fetch("https://api.github.com/gists/"+GIST_ID,{
+          headers:{"Authorization":"Bearer "+cfg.githubToken,"Accept":"application/vnd.github+json"},
+          signal:ctrl.signal
+        });}finally{clearTimeout(timer);}
+        if(r.ok){
+          const gist=await r.json();
+          const fileInfo=gist.files&&gist.files[GIST_FILE];
+          if(fileInfo){
+            if(fileInfo.truncated){
+              /* 파일이 커서 내용이 잘린 경우: raw_url은 커밋 해시 포함 → CDN 캐시 안전 */
+              const rr=await fetch(fileInfo.raw_url);
+              text=await rr.text();
+            }else{
+              text=fileInfo.content;
+            }
+          }
+        }
+      }catch(_){/* API 실패 시 raw URL로 폴백 */}
+    }
+
+    /* ② 토큰 없거나 API 실패: raw URL (CDN) 폴백 */
+    if(text===null){
+      const rawUrl="https://gist.githubusercontent.com/"+GIST_OWNER+"/"+GIST_ID+"/raw/"+GIST_FILE+"?t="+Date.now();
+      const lCtrl=new AbortController();
+      const lTimer=setTimeout(()=>lCtrl.abort(),10000);
+      let r;
+      try{r=await fetch(rawUrl,{signal:lCtrl.signal});}
+      finally{clearTimeout(lTimer);}
+      if(!r.ok){console.warn("cloudLoad error",r.status);return null;}
+      text=await r.text();
+    }
+
+    let arr=await _parseCloudText(text);
     if(!Array.isArray(arr)) arr=[];
     console.log("cloudLoad: "+arr.length+"건 로드 완료 (Gist)");
     if(arr.length>0) saveBackup(arr);
