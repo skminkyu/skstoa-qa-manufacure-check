@@ -858,8 +858,8 @@ async function jsonbinLoad(){
 }
 
 async function cloudSave(records){
-  if(!Array.isArray(records)||records.length===0){
-    console.warn("cloudSave: 빈 배열 저장 차단");
+  if(!Array.isArray(records)){
+    console.warn("cloudSave: 유효하지 않은 데이터");
     return false;
   }
   if(!isConfigured())return false;
@@ -1124,7 +1124,7 @@ function render(){
 
   /* ── 임시저장소 ── */
   else if(S.view==="drafts"){
-    el.innerHTML=renderDraftsView();
+    html+=renderDraftsView();
   }
 
   /* ── 기록 목록 ── */
@@ -2385,7 +2385,10 @@ async function delRec(i){
     return;
   }
   const base=Array.isArray(latest)&&latest.length>0?latest:S.records;
-  const newRecs=base.filter(r=>r.id!==recToDelete.id);
+  /* id 중복 레코드가 있어도 1건만 삭제 (filter는 같은 id 전체 제거하므로 findIndex+slice 사용) */
+  const delIdx=base.findIndex(r=>r.id===recToDelete.id);
+  if(delIdx<0){setLoading(false);showToast("⚠️ 삭제할 기록을 찾을 수 없습니다.",false);return;}
+  const newRecs=[...base.slice(0,delIdx),...base.slice(delIdx+1)];
   const ok=await cloudSave(newRecs);
   if(!ok){
     setLoading(false);
