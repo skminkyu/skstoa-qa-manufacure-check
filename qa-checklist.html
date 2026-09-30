@@ -2384,9 +2384,15 @@ async function delRec(i){
     showToast("⚠️ 삭제 전 데이터 로드 실패. 네트워크 확인 후 재시도하세요.",false);
     return;
   }
-  const base=Array.isArray(latest)&&latest.length>0?latest:S.records;
-  /* id 중복 레코드가 있어도 1건만 삭제 (filter는 같은 id 전체 제거하므로 findIndex+slice 사용) */
-  const delIdx=base.findIndex(r=>r.id===recToDelete.id);
+  /* CDN 캐시로 인해 latest에 방금 저장한 레코드가 없을 수 있으므로
+     latest에서 못 찾으면 S.records를 base로 폴백 */
+  let base=Array.isArray(latest)&&latest.length>0?latest:S.records;
+  let delIdx=base.findIndex(r=>r.id===recToDelete.id);
+  if(delIdx<0&&base!==S.records){
+    /* CDN 캐시 stale — S.records로 재시도 */
+    base=S.records;
+    delIdx=base.findIndex(r=>r.id===recToDelete.id);
+  }
   if(delIdx<0){setLoading(false);showToast("⚠️ 삭제할 기록을 찾을 수 없습니다.",false);return;}
   const newRecs=[...base.slice(0,delIdx),...base.slice(delIdx+1)];
   const ok=await cloudSave(newRecs);
