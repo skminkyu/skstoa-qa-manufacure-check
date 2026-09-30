@@ -693,6 +693,78 @@ function saveCfg(){localStorage.setItem(CFG_KEY,JSON.stringify(cfg));}
 function isConfigured(){return!!cfg.githubToken;}
 
 const RECORDS_BACKUP_KEY="qa_records_backup";
+const DRAFT_KEY="qa_drafts_v1";
+
+/* ── 임시저장 함수들 ── */
+function loadDrafts(){try{const s=localStorage.getItem(DRAFT_KEY);return s?JSON.parse(s):[];}catch(_){return[];}}
+function saveDrafts(arr){try{localStorage.setItem(DRAFT_KEY,JSON.stringify(arr));}catch(_){}}
+function getDraftCount(){return loadDrafts().length;}
+
+function saveDraftAction(){
+  saveAllInputs();
+  const drafts=loadDrafts();
+  const draftId=S.draftId||Date.now();
+  const draft={draftId,clType:S.clType,header:{...S.header},J:{...S.J},photos:(S.photos||[]).slice(),pdfs:(S.pdfs||[]).slice(),savedAt:new Date().toISOString()};
+  const idx=drafts.findIndex(d=>d.draftId===draftId);
+  if(idx>=0) drafts[idx]=draft; else drafts.unshift(draft);
+  saveDrafts(drafts);
+  S.draftId=draftId;
+  showToast("📝 임시저장 완료! 임시저장소에 보관되었습니다.");
+  render();
+}
+
+function loadDraftIntoEditor(draftId){
+  const drafts=loadDrafts();
+  const draft=drafts.find(d=>d.draftId===draftId);
+  if(!draft)return;
+  S.clType=draft.clType;
+  S.header={...draft.header};
+  S.J={...draft.J};
+  S.photos=(draft.photos||[]).slice();
+  S.pdfs=(draft.pdfs||[]).slice();
+  S.editIdx=null;
+  S.draftId=draft.draftId;
+  S.view="checklist";
+  render();
+}
+
+function deleteDraft(draftId){
+  if(!confirm("임시저장을 삭제하시겠습니까?"))return;
+  const drafts=loadDrafts().filter(d=>d.draftId!==draftId);
+  saveDrafts(drafts);
+  render();
+}
+
+function goDrafts(){S.view="drafts";render();}
+
+function renderDraftsView(){
+  const drafts=loadDrafts();
+  return `<div class="wrap" style="max-width:800px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <h2 style="font-size:18px;font-weight:700;color:#0f2547">📝 임시저장소</h2>
+      <span style="font-size:13px;color:#78909c">${drafts.length}건 임시저장 중</span>
+      <button class="btn btn-ol" style="margin-left:auto" onclick="goHome()">← 홈으로</button>
+    </div>
+    ${drafts.length===0
+      ?`<div class="empty" style="padding:60px 20px;text-align:center;background:#fff;border-radius:12px"><div style="font-size:44px;margin-bottom:14px">📭</div><div style="font-size:14px;color:#546e7a">임시저장된 내용이 없습니다.</div><div style="font-size:12px;margin-top:8px;color:#90a4ae">평가 작성 중 "임시저장" 버튼을 누르면 여기에 저장됩니다.</div></div>`
+      :drafts.map(d=>{
+        const ct=TYPES[d.clType];
+        const label=ct?ct.label:"알 수 없음";
+        return `<div class="rcard" style="cursor:default;margin-bottom:10px;display:flex;align-items:center;gap:14px;padding:14px 18px">
+          <div style="font-size:26px">${ct?ct.label.slice(0,2):"📝"}</div>
+          <div style="flex:1;min-width:0">
+            <div class="rtl">${label}${d.header.업소명?` · <strong>${esc(d.header.업소명)}</strong>`:""}</div>
+            <div class="rinfo">${d.header.심사일자||"-"} · 심사자: ${esc(d.header.심사자)||"-"}</div>
+            <div class="rdate" style="color:#e65100">🕐 임시저장: ${new Date(d.savedAt).toLocaleString("ko-KR")}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <button class="btn btn-dark" style="font-size:12px;padding:6px 14px" onclick="loadDraftIntoEditor(${d.draftId})">✏️ 계속 작성</button>
+            <button class="btn-sm" style="color:#e53935;border-color:#e53935" onclick="deleteDraft(${d.draftId})">삭제</button>
+          </div>
+        </div>`;
+      }).join("")}
+  </div>`;
+}
 
 /* localStorage 백업에서 복구 */
 function loadBackup(){
@@ -836,6 +908,7 @@ let S={
   editIdx:null,
   selRecIdx:0,
   search:{업소명:"",심사자:"",유형:"",적합여부:"",날짜from:"",날짜to:""},
+  draftId:null, /* 임시저장에서 불러온 경우 해당 draftId */
 };
 let toastT=null;
 
@@ -879,6 +952,7 @@ function render(){
     <div class="tb-btns">
       <button class="tb-btn ${S.view==="home"?"on":""}" onclick="goHome()">🏠 홈</button>
       <button class="tb-btn ${S.view==="records"?"on":""}" onclick="goRecords()">📁 공유 기록 (${S.records.length})</button>
+      <button class="tb-btn ${S.view==="drafts"?"on":""}" onclick="goDrafts()">📝 임시저장소${getDraftCount()>0?` (${getDraftCount()})`:""}</button>
       <button class="tb-btn" onclick="openModal()" title="공유 저장 설정">⚙️ 설정</button>
     </div>
   </div>
@@ -1017,10 +1091,12 @@ function render(){
       </div>
       <div class="abar">
         <button class="btn btn-dark" onclick="doSave()">${S.editIdx!==null?"✏️ 수정 저장":"💾 저장 (공유)"}</button>
+        <button class="btn" style="background:#f57c00;color:#fff;border:none" onclick="saveDraftAction()">📝 임시저장</button>
         <button class="btn btn-gold" onclick="window.print()">📄 PDF 내보내기</button>
         <button class="btn btn-ol" style="border-color:#2e7d32;color:#2e7d32" onclick="exportCurrentToExcel()">📊 Excel</button>
         <button class="btn btn-ol" onclick="goHome()">← 돌아가기</button>
         ${S.editIdx!==null?`<span style="font-size:11px;color:#e65100;padding:5px 0">📝 수정 중</span>`:""}
+        ${S.draftId?`<span style="font-size:11px;color:#f57c00;padding:5px 0">🕐 임시저장에서 불러옴</span>`:""}
       </div>
       ${ct.data.map(sec=>renderSection(sec,S.J,false,ct.배점모드,S.header.평가유형서브)).join("")}
       ${renderEtcSection(S.J,false)}
@@ -1044,6 +1120,11 @@ function render(){
       ${renderPdfSection(S.pdfs,false)}
       ${renderPhotoPrint(S.photos)}
     </div>`;
+  }
+
+  /* ── 임시저장소 ── */
+  else if(S.view==="drafts"){
+    el.innerHTML=renderDraftsView();
   }
 
   /* ── 기록 목록 ── */
@@ -1526,6 +1607,7 @@ function startNew(type){
   S.photos=[];
   S.pdfs=[];
   S.editIdx=null;
+  S.draftId=null;
   S.view="checklist";
   pushState('checklist', type);
   render();
@@ -1853,8 +1935,16 @@ async function doSave(){
        HTTP 200 응답을 신뢰하고 로컬 상태를 직접 업데이트 */
     S.records=newRecs;
     saveBackup(newRecs);
+    /* 임시저장에서 불러온 경우 임시저장 삭제 */
+    if(S.draftId){
+      const remaining=loadDrafts().filter(d=>d.draftId!==S.draftId);
+      saveDrafts(remaining);
+      S.draftId=null;
+    }
     setLoading(false);
-    showToast("✅ 공유 저장소에 저장되었습니다!");
+    showToast("✅ 공유 저장소에 저장되었습니다! (임시저장소에서 제거됨)");
+    S.view="records";
+    render();
     return;
   }
 
@@ -2296,7 +2386,12 @@ async function delRec(i){
   }
   const base=Array.isArray(latest)&&latest.length>0?latest:S.records;
   const newRecs=base.filter(r=>r.id!==recToDelete.id);
-  await cloudSave(newRecs);
+  const ok=await cloudSave(newRecs);
+  if(!ok){
+    setLoading(false);
+    showToast("⚠️ 삭제 실패. 네트워크 또는 저장소 연결을 확인해주세요.",false);
+    return;
+  }
   S.records=newRecs;
   saveBackup(newRecs);
   setLoading(false);
