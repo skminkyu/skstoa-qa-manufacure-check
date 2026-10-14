@@ -230,7 +230,7 @@ tr:hover td{background:#f8f9ff;}
 /* PDF 출력용 사진 */
 .photo-print-section{display:none;}
 @media print{
-  .topbar,.abar,.shared-notice,.modal-bg,button,.modal,.grade-guide,.photo-section,.photo-notice,.pdf-section{display:none!important;}
+  .topbar,.abar,.shared-notice,.modal-bg,button,.modal,.grade-guide,.photo-section,.photo-notice,.pdf-section,.no-print{display:none!important;}
   body{background:#fff;}
   .scard{page-break-inside:avoid;box-shadow:none;border:1px solid #ddd;}
   .shead{background:#0f2547!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -682,10 +682,10 @@ const GIST_FILE="qa_records.json";
 const JSONBIN_CFG={masterKey:"$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q",binId:"69dc4fd236566621a8a84940"};
 /* 기본 토큰: 분할 저장 (GitHub 스캐너 우회) */
 const _DT=["ghp_osEN8dm","CL2fmLQ8lcs","HG5R6ZEhRI","Xa3vtbss"].join("");
-let cfg={githubToken:""};
+let cfg={githubToken:"",anthropicKey:""};
 try{
   const s=localStorage.getItem(CFG_KEY);
-  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||_DT;}
+  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||_DT;cfg.anthropicKey=parsed.anthropicKey||"";}
   else{cfg.githubToken=_DT;}
 }catch(_){cfg.githubToken=_DT;}
 
@@ -736,6 +736,288 @@ function deleteDraft(draftId){
 }
 
 function goDrafts(){S.view="drafts";render();}
+
+/* ════════════════════════════════════════
+   행정처분 검토 (내부용) — law-check 데이터 기반
+════════════════════════════════════════ */
+const DISP_DATA={
+  cgmp:`## 화장품법 행정처분 기준 (화장품법 시행규칙 별표 7)
+
+### 시설 기준 위반 (법 제24조제1항제2호)
+| 위반 내용 | 1차 | 2차 | 3차 | 4차 |
+|-----------|-----|-----|-----|-----|
+| 작업소·보관소·시험실 중 어느 하나 없음 | 개수명령 | 업무정지 1개월 | 업무정지 2개월 | 업무정지 4개월 |
+| 제조·품질검사 시설 및 기구 전부 없음 | 업무정지 3개월 | 업무정지 6개월 | 등록취소 | - |
+
+### CGMP 기준 위반
+| 위반 내용 | 1차 | 2차 | 3차 | 4차 |
+|-----------|-----|-----|-----|-----|
+| 품질관리기준 위반 (안전·품질 관련) | 판매업무정지 1개월 | 3개월 | 6개월 | 12개월 |
+| 우수화장품 제조·품질관리기준 위반 | 시정명령 | 업무정지 1개월 | 업무정지 3개월 | 업무정지 6개월 |
+
+### 표시 기준 위반 (법 제24조제1항제9호)
+| 위반 내용 | 1차 | 2차 | 3차 | 4차 |
+|-----------|-----|-----|-----|-----|
+| 기재사항 전부 미기재 | 해당품목 판매업무정지 3개월 | 6개월 | 12개월 | - |
+| 기재사항 일부 미기재 | 해당품목 판매업무정지 15일 | 1개월 | 3개월 | 6개월 |
+| 기재사항 거짓 기재 | 해당품목 판매업무정지 1개월 | 3개월 | 6개월 | 12개월 |
+
+### 판매금지 화장품 판매·제조 (법 제24조제1항제11호)
+| 위반 내용 | 1차 | 2차 | 3차 | 4차 |
+|-----------|-----|-----|-----|-----|
+| 사용금지 원료 사용 | 제조 또는 판매업무정지 3개월 | 6개월 | 12개월 | 등록취소 |
+| 변패·이물질 혼입 화장품 | 해당품목 업무정지 1개월 | 3개월 | 6개월 | 12개월 |
+| 병원미생물 오염 화장품 | 해당품목 업무정지 3개월 | 6개월 | 9개월 | 12개월 |
+| 사용기준 초과 원료 사용 | 해당품목 업무정지 3개월 | 6개월 | 9개월 | 12개월 |
+
+### 표시·광고 위반 (법 제24조제1항제10호)
+| 위반 내용 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 의약품 오인, 기능성 오인 등 중대 위반 | 판매·광고업무정지 3개월 | 6개월 | 9개월 |
+| 허위·과장·소비자 오인 등 | 판매·광고업무정지 2개월 | 4개월 | 6개월 |
+
+### 일반 원칙
+- 위반행위 2개 이상: 가장 무거운 처분 + 나머지의 1/2 가산 (최대 12개월)
+- 위반 횟수 기산: 최근 1년간 같은 위반행위 처분 기준`,
+
+  haccp_g:`## 식품위생법 행정처분 기준 (시행규칙 별표 23)
+
+### 영업 관련
+| 위반 행위 | 근거 | 1차 | 2차 | 3차 |
+|-----------|------|-----|-----|-----|
+| 영업허가 없이 영업 | 법 제37조 | 영업소 폐쇄 | - | - |
+| 영업신고 없이 영업 | 법 제37조 | 영업정지 15일 | 1개월 | 폐쇄 |
+| 영업 변경사항 미신고 | 법 제37조 | 시정명령 | 영업정지 5일 | 15일 |
+
+### HACCP 관련 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| HACCP 관리기준 미준수 | 시정명령 | 영업정지 7일 | 영업정지 15일 |
+| HACCP 교육훈련 미이수 | 시정명령 | 영업정지 7일 | 영업정지 15일 |
+| HACCP 기록 미작성·허위작성 | 시정명령 | 영업정지 5일 | 영업정지 15일 |
+| HACCP 선행요건 관리 위반 | 시정명령 | 영업정지 7일 | 영업정지 1개월 |
+
+### 식품 위해
+| 위반 행위 | 근거 | 1차 | 2차 | 3차 |
+|-----------|------|-----|-----|-----|
+| 유통기한 경과 제품 판매 | 법 제44조 | 영업정지 15일 | 1개월 | 3개월 |
+| 이물 혼입(고의) | 법 제44조 | 영업정지 2개월 | 4개월 | 허가취소 |
+| 이물 혼입(비고의, 인체위해) | 법 제44조 | 영업정지 1개월 | 2개월 | 3개월 |
+| 사용금지 원료 사용 | 법 제6조 | 영업정지 2개월 | 4개월 | 허가취소 |
+
+### 위생관리 위반
+| 위반 행위 | 근거 | 1차 | 2차 | 3차 |
+|-----------|------|-----|-----|-----|
+| 위생관리 기준 위반 | 법 제44조 | 시정명령 | 영업정지 7일 | 15일 |
+| 건강진단 미실시 | 법 제40조 | 시정명령 | 영업정지 5일 | 10일 |
+| 식품위생교육 미이수 | 법 제41조 | 시정명령 | 영업정지 7일 | 15일 |
+
+### 표시 기준 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 식품 표시사항 위반 | 시정명령 | 영업정지 5일 | 15일 |
+| 허위표시·과대광고 | 영업정지 1개월 | 3개월 | 6개월 |`,
+
+  haccp_s:`## 식품위생법 행정처분 기준 (농·축·수산물 취급업소)
+
+### HACCP 관련 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| HACCP 관리기준 미준수 | 시정명령 | 영업정지 7일 | 영업정지 15일 |
+| HACCP 기록 미작성·허위작성 | 시정명령 | 영업정지 5일 | 영업정지 15일 |
+| HACCP 선행요건 관리 위반 | 시정명령 | 영업정지 7일 | 영업정지 1개월 |
+
+### 위생관리 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 위생관리 기준 위반 | 시정명령 | 영업정지 7일 | 15일 |
+| 건강진단 미실시 | 시정명령 | 영업정지 5일 | 10일 |
+| 냉장·냉동 온도 기준 위반 | 시정명령 | 영업정지 5일 | 15일 |
+| 식품 보관기준 위반 | 시정명령 | 영업정지 7일 | 15일 |`,
+
+  hygiene:`## 위생용품 관리법 행정처분 기준 (위생용품 관리법 시행규칙 별표)
+
+### 제조업 관련
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 등록 없이 제조·수입·판매 | 영업정지 3개월 또는 등록취소 | - | - |
+| 시설기준 미달 | 시정명령 | 영업정지 1개월 | 영업정지 3개월 |
+| 제조·품질 관리기준 위반 | 시정명령 | 영업정지 7일 | 영업정지 1개월 |
+
+### 표시 기준 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 표시사항 전부 미기재 | 해당품목 판매금지 | 영업정지 1개월 | 영업정지 3개월 |
+| 표시사항 일부 미기재 | 시정명령 | 영업정지 7일 | 영업정지 1개월 |
+| 허위·과대 표시·광고 | 영업정지 1개월 | 영업정지 3개월 | 영업정지 6개월 |
+
+### 품질 기준 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 품질 기준 위반 제품 제조·판매 | 해당품목 판매금지 | 영업정지 1개월 | 영업정지 3개월 |
+| 위생용품 회수 명령 불이행 | 영업정지 1개월 | 영업정지 3개월 | 등록취소 |`,
+
+  medi_ex:`## 약사법 행정처분 기준 - 의약외품 (약사법 시행규칙 별표 4)
+
+### 제조·판매업 관련
+| 위반 행위 | 근거 | 1차 | 2차 | 3차 |
+|-----------|------|-----|-----|-----|
+| 허가 없이 의약외품 제조 | 법 제31조 | 제조업무정지 3개월 | 6개월 | 허가취소 |
+| 품목허가 없이 판매 | 법 제42조 | 해당품목 판매정지 3개월 | 6개월 | 해당품목 허가취소 |
+| 변경허가 미이행 | 법 제31조 | 시정명령 | 해당품목 판매정지 15일 | 1개월 |
+
+### 제조시설 기준 위반 (시설기준령/시행규칙 제8조)
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 방충·방서·방진 시설 미설치 | 시정명령 | 제조업무정지 1개월 | 3개월 |
+| 작업소·보관소 구조·설비 기준 위반 | 시정명령 | 제조업무정지 1개월 | 3개월 |
+| 구제제등 작업소 분리 의무 위반 | 시정명령 | 제조업무정지 15일 | 1개월 |
+| GMP 기준 미준수(내용고형제·내용액제·연고제) | 해당품목 제조정지 3개월 | 6개월 | 해당품목 허가취소 |
+| 허가된 제조소 외 의약외품 보관 | 시정명령 | 제조업무정지 15일 | 1개월 |
+
+### 표시 기준 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 용기·포장 표시사항 미기재 | 해당품목 판매정지 1개월 | 3개월 | 6개월 |
+| 표시사항 일부 누락 | 시정명령 | 해당품목 판매정지 15일 | 1개월 |
+| 허가사항과 다른 표시 | 해당품목 판매정지 1개월 | 3개월 | 허가취소 |
+
+### 품질 기준 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 기준·규격 위반 의약외품 제조 | 해당품목 제조정지 3개월 | 6개월 | 해당품목 허가취소 |
+| 변질·오염 의약외품 판매 | 해당품목 판매정지 3개월 | 6개월 | 해당품목 허가취소 |
+| 시설기준 미달로 품질 이상 제품 제조 | 해당품목 제조정지 3개월 | 6개월 | 해당품목 허가취소 |
+
+### 서류/기록 관리 위반
+| 위반 행위 | 1차 | 2차 | 3차 |
+|-----------|-----|-----|-----|
+| 제조관리기록서 미작성·허위작성 | 시정명령 | 제조업무정지 7일 | 15일 |
+| 품질관리기록서 미작성·허위작성 | 시정명령 | 제조업무정지 7일 | 15일 |
+| 품질표준서 미비치 | 시정명령 | 제조업무정지 7일 | 15일 |
+
+> 일반원칙: 위반 횟수 기산은 최근 1년간 동일 위반행위 처분 기준, 위해 정도에 따라 가중·감경 가능 (별표8 일반기준 적용)`
+};
+
+function _collectNonConformities(clType, sections, J){
+  const items=[];
+  const isBigoOnly=(clType==="hygiene"||clType==="medi_ex");
+  sections.forEach(function(sec){
+    sec.items.forEach(function(it){
+      const note=(J[it.id+"_note"]||"").trim();
+      if(isBigoOnly){
+        if(note) items.push({section:sec.title,항목:it.항목||"",내용:it.내용||"",note:note});
+      }else{
+        const bp=Number(J[it.id+"_bp"]!==undefined?J[it.id+"_bp"]:it.배점)||0;
+        if(!bp) return;
+        const v=J[it.id];
+        const score=(v!==undefined&&v!=="")?Math.min(Number(v),bp):null;
+        if(score!==null&&score<bp){
+          items.push({section:sec.title,조항:it.조항||"",항목:it.항목||"",bp:bp,score:score,note:note});
+        }
+      }
+    });
+  });
+  return items;
+}
+
+async function runDispAnalysis(clType, sections, J, header){
+  if(!cfg.anthropicKey){
+    showToast("⚠️ Claude API 키를 먼저 설정해주세요. ⚙️ 설정 버튼을 눌러 입력하세요.",false);
+    return;
+  }
+  const items=_collectNonConformities(clType,sections,J);
+  if(!items.length){
+    S.dispResult={empty:true};S.dispLoading=false;render();return;
+  }
+  const ct=TYPES[clType];
+  const dispText=DISP_DATA[clType]||"";
+  const isBigoOnly=(clType==="hygiene"||clType==="medi_ex");
+  const listText=items.map((it,i)=>{
+    const base=`${i+1}. [${it.section}]`;
+    const name=it.항목?` ${it.항목}`:it.내용?` ${it.내용}`:"";
+    const scoreInfo=!isBigoOnly&&it.score!==undefined?` (배점 ${it.bp}점 → 취득 ${it.score}점)`:"";
+    const noteInfo=it.note?` — 비고: ${it.note}`:"";
+    return base+name+scoreInfo+noteInfo;
+  }).join("\n");
+
+  const prompt=`당신은 SK스토아 품질관리팀의 법규 자문 전문가입니다. 내부 담당자 검토용으로 작성합니다.
+
+【평가 정보】
+- 업종: ${ct?ct.label:clType}
+- 업소명: ${header.업소명||"-"}
+- 심사일자: ${header.심사일자||"-"}
+- 심사자: ${header.심사자||"-"}
+
+【발견된 부적합/비고 사항 (${items.length}건)】
+${listText}
+
+【${ct?ct.label:clType} 관련 행정처분 기준】
+${dispText}
+
+위 부적합 사항들을 분석하여 다음을 작성해주세요:
+
+1. **주요 부적합별 해당 행정처분 기준** — 각 항목이 어떤 조항에 해당하는지, 1차~3차 처분 기준
+2. **최대 받을 수 있는 행정처분** — 전체 부적합 중 가장 무거운 처분 기준 요약
+3. **담당자 검토 코멘트** — 즉시 조치 필요 사항, 추가 확인 포인트, 재심사 권고 여부 등
+
+간결하고 실용적으로 작성하세요. 내부 검토 자료입니다.`;
+
+  S.dispLoading=true;S.dispResult=null;render();
+  try{
+    const r=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2048,messages:[{role:"user",content:prompt}]})
+    });
+    if(!r.ok){
+      let msg="";try{const j=await r.json();msg=j.error?.message||"";}catch(_){}
+      throw new Error("HTTP "+r.status+(msg?": "+msg:""));
+    }
+    const d=await r.json();
+    S.dispResult={text:d.content[0].text};
+  }catch(e){
+    S.dispResult={error:e.message};
+  }
+  S.dispLoading=false;render();
+}
+
+function dispAnalysisChecklist(){
+  const ct=TYPES[S.clType];
+  runDispAnalysis(S.clType,ct.data,S.J,S.header);
+}
+function dispAnalysisDetail(){
+  const rec=S.selRec;
+  const rt=TYPES[rec.clType];
+  runDispAnalysis(rec.clType,rt.data,rec.J,rec.header);
+}
+
+function renderDispositionPanel(isDetail){
+  const hasKey=!!cfg.anthropicKey;
+  const btnFn=isDetail?"dispAnalysisDetail()":"dispAnalysisChecklist()";
+  const btnLabel=S.dispLoading?"⏳ 분석 중...":"🔍 AI 행정처분 분석";
+  return `<div class="no-print" style="background:#fff8e1;border:2px solid #f9a825;border-radius:11px;margin-top:10px;overflow:hidden">
+    <div style="background:#f9a825;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-weight:700;font-size:13px;color:#0f2547">🔍 행정처분 검토 <span style="font-weight:400;font-size:11px">(내부 검토용 · PDF 미출력)</span></span>
+      ${hasKey
+        ?`<button class="btn" style="margin-left:auto;background:#0f2547;color:#fff;font-size:12px;padding:5px 14px;border:none" onclick="${btnFn}" ${S.dispLoading?"disabled":""}">${btnLabel}</button>`
+        :`<span style="margin-left:auto;font-size:11px;color:#c62828;font-weight:600">⚙️ 설정에서 Claude API 키를 먼저 입력하세요</span>`
+      }
+    </div>
+    <div style="padding:14px 16px;min-height:44px">
+      ${S.dispLoading
+        ?`<div style="text-align:center;color:#546e7a;font-size:13px">⏳ AI가 행정처분 기준을 분석하고 있습니다...</div>`
+        :S.dispResult?.error
+          ?`<div style="color:#c62828;font-size:13px">⚠️ 분석 실패: ${esc(S.dispResult.error)}<br><span style="font-size:11px;color:#78909c">API 키를 확인하거나 잠시 후 재시도하세요.</span></div>`
+          :S.dispResult?.empty
+            ?`<div style="color:#78909c;font-size:13px">※ 부적합·비고 사항이 없어 분석할 내용이 없습니다.</div>`
+            :S.dispResult?.text
+              ?`<div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#1a1a2e">${esc(S.dispResult.text)}</div>`
+              :`<div style="color:#78909c;font-size:12px">위 버튼을 눌러 주요 부적합 사항의 행정처분 기준과 담당자 검토 코멘트를 확인하세요.</div>`
+      }
+    </div>
+  </div>`;
+}
 
 function renderDraftsView(){
   const drafts=loadDrafts();
@@ -942,6 +1224,8 @@ let S={
   selRecIdx:0,
   search:{업소명:"",심사자:"",유형:"",적합여부:"",날짜from:"",날짜to:""},
   draftId:null, /* 임시저장에서 불러온 경우 해당 draftId */
+  dispResult:null, /* 행정처분 분석 결과 */
+  dispLoading:false, /* 행정처분 분석 로딩 */
 };
 let toastT=null;
 
@@ -1134,6 +1418,7 @@ function render(){
       ${ct.data.map(sec=>renderSection(sec,S.J,false,ct.배점모드,S.header.평가유형서브)).join("")}
       ${renderEtcSection(S.J,false)}
       ${renderSummary(ct.data,S.J,S.clType)}
+      ${renderDispositionPanel(false)}
       ${(S.clType!=="hygiene"&&S.clType!=="medi_ex")?`<div class="total-bar">
         <span class="tl">종 합 총 점</span>
         <span class="tr">
@@ -1358,6 +1643,7 @@ function render(){
       ${rt.data.map(sec=>renderSection(sec,rec.J,true,rt.배점모드,rec.header.평가유형서브)).join("")}
       ${renderEtcSection(rec.J,true)}
       ${renderSummary(rt.data,rec.J,rec.clType)}
+      ${renderDispositionPanel(true)}
       ${isHygieneDetail?"":`<div class="total-bar">
         <span class="tl">종 합 총 점</span>
         <span class="tr">${recIsManual
@@ -1381,6 +1667,11 @@ function render(){
         <div class="ff">
           <label>GitHub Personal Access Token (gist 권한)</label>
           <input id="inp-key" type="password" value="${esc(cfg.githubToken)}" placeholder="ghp_..."/>
+        </div>
+        <div class="ff" style="margin-top:10px">
+          <label>Claude API Key <span style="font-size:10px;color:#78909c;font-weight:400">(행정처분 AI 분석 기능용 · 선택)</span></label>
+          <input id="inp-anthropic" type="password" value="${esc(cfg.anthropicKey)}" placeholder="sk-ant-..."/>
+          <span style="font-size:11px;color:#90a4ae;margin-top:3px">키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.</span>
         </div>
         <div class="modal-btns">
           <button class="btn btn-ol" onclick="closeModal()">취소</button>
@@ -1630,8 +1921,8 @@ function renderSection(sec,J,ro,bpMode,subType){
 /* ════════════════════════════════════════
    이벤트 핸들러
 ════════════════════════════════════════ */
-function goHome(){S.view="home";pushState('home');render();}
-function goRecords(){S.view="records";pushState('records');render();doRefresh();}
+function goHome(){S.view="home";S.dispResult=null;S.dispLoading=false;pushState('home');render();}
+function goRecords(){S.view="records";S.dispResult=null;S.dispLoading=false;pushState('records');render();doRefresh();}
 
 function startNew(type){
   S.clType=type;
@@ -2403,7 +2694,7 @@ function editRec(i){
   S.view="checklist";
   render();
 }
-function viewRec(i){S.selRec=S.records[i];S.selRecIdx=i;S.view="detail";render();}
+function viewRec(i){S.selRec=S.records[i];S.selRecIdx=i;S.view="detail";S.dispResult=null;S.dispLoading=false;render();}
 
 async function delRec(i){
   if(!confirm("이 기록을 삭제하시겠습니까?\n공유 저장소에서 모든 사용자에게 삭제됩니다."))return;
@@ -2447,6 +2738,8 @@ function closeModal(){S.showModal=false;render();}
 
 function saveCfgModal(){
   cfg.githubToken=document.getElementById("inp-key").value.trim();
+  const ak=document.getElementById("inp-anthropic");
+  if(ak) cfg.anthropicKey=ak.value.trim();
   saveCfg();
   S.showModal=false;
   render();
