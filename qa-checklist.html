@@ -926,36 +926,30 @@ function _buildDispPrompt(clType, sections, J, header){
   if(!items.length) return null;
   const ct=TYPES[clType];
   const rawDisp=DISP_DATA[clType]||"";
-  /* Vercel 10초 제한 대응: 프롬프트 크기 축소 */
-  const dispText=rawDisp.length>2000?rawDisp.slice(0,2000)+"…(기준 일부 생략)":rawDisp;
+  /* Vercel 10초 제한 대응: 행정처분 기준 1000자, 항목 최대 10건으로 축소 */
+  const dispText=rawDisp.length>1000?rawDisp.slice(0,1000)+"…":rawDisp;
   const isBigoOnly=(clType==="hygiene"||clType==="medi_ex");
-  const listText=items.map((it,i)=>{
-    const base=`${i+1}. [${it.section}]`;
-    const name=it.항목?` ${it.항목}`:it.내용?` ${it.내용}`:"";
-    const scoreInfo=!isBigoOnly&&it.score!==undefined?` (배점 ${it.bp}점 → 취득 ${it.score}점)`:"";
-    const noteInfo=it.note?` — 비고: ${it.note}`:"";
-    return base+name+scoreInfo+noteInfo;
+  const listText=items.slice(0,10).map((it,i)=>{
+    const name=it.항목?it.항목:it.내용?""+it.내용:"";
+    const noteInfo=it.note?" [비고:"+it.note+"]":"";
+    return `${i+1}.[${it.section}]${name}${noteInfo}`;
   }).join("\n");
-  return {items, prompt:`당신은 SK스토아 품질관리팀의 법규 자문 전문가입니다. 내부 담당자 검토용으로 작성합니다.
+  return {items, prompt:`SK스토아 품질관리 법규 자문. 내부용.
 
-【평가 정보】
-- 업종: ${ct?ct.label:clType}
-- 업소명: ${header.업소명||"-"}
-- 심사일자: ${header.심사일자||"-"}
-- 심사자: ${header.심사자||"-"}
+업종:${ct?ct.label:clType} / 업소:${header.업소명||"-"} / 심사일:${header.심사일자||"-"}
 
-【발견된 부적합/비고 사항 (${items.length}건)】
+[부적합${items.length>10?"(상위10건/"+items.length+"건)":"("+items.length+"건)"}]
 ${listText}
 
-【${ct?ct.label:clType} 관련 행정처분 기준】
+[행정처분기준]
 ${dispText}
 
-위 부적합 사항들을 분석하여 다음을 작성해주세요:
-1. 주요 부적합별 해당 행정처분 기준 — 각 항목이 어떤 조항에 해당하는지, 1차~3차 처분 기준
-2. 최대 받을 수 있는 행정처분 — 전체 부적합 중 가장 무거운 처분 기준 요약
-3. 담당자 검토 코멘트 — 즉시 조치 필요 사항, 추가 확인 포인트, 재심사 권고 여부 등
+위 부적합을 3항목으로 간략 분석:
+1.각 부적합의 해당 처분기준(1차~3차)
+2.최대 처분 요약
+3.즉시조치 필요사항
 
-간결하고 실용적으로 작성하세요. 내부 검토 자료입니다.`};
+핵심만 짧게.`};
 }
 
 async function _copyPromptFallback(prompt){
@@ -986,7 +980,7 @@ async function runDispAnalysis(clType, sections, J, header){
         r=await fetch(cfg.proxyUrl.replace(/\/$/,"")+"/api/proxy-claude",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({apiKey:cfg.anthropicKey,prompt,model:"claude-sonnet-4-6",max_tokens:2048}),
+          body:JSON.stringify({apiKey:cfg.anthropicKey,prompt,model:"claude-sonnet-4-6",max_tokens:800}),
           signal:ctrl.signal
         });
       }else{
