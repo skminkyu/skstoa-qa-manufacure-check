@@ -921,15 +921,9 @@ function _collectNonConformities(clType, sections, J){
   return items;
 }
 
-async function runDispAnalysis(clType, sections, J, header){
-  if(!cfg.anthropicKey){
-    showToast("⚠️ Claude API 키를 먼저 설정해주세요. ⚙️ 설정 버튼을 눌러 입력하세요.",false);
-    return;
-  }
+function _buildDispPrompt(clType, sections, J, header){
   const items=_collectNonConformities(clType,sections,J);
-  if(!items.length){
-    S.dispResult={empty:true};S.dispLoading=false;render();return;
-  }
+  if(!items.length) return null;
   const ct=TYPES[clType];
   const dispText=DISP_DATA[clType]||"";
   const isBigoOnly=(clType==="hygiene"||clType==="medi_ex");
@@ -940,8 +934,7 @@ async function runDispAnalysis(clType, sections, J, header){
     const noteInfo=it.note?` — 비고: ${it.note}`:"";
     return base+name+scoreInfo+noteInfo;
   }).join("\n");
-
-  const prompt=`당신은 SK스토아 품질관리팀의 법규 자문 전문가입니다. 내부 담당자 검토용으로 작성합니다.
+  return {items, prompt:`당신은 SK스토아 품질관리팀의 법규 자문 전문가입니다. 내부 담당자 검토용으로 작성합니다.
 
 【평가 정보】
 - 업종: ${ct?ct.label:clType}
@@ -956,30 +949,60 @@ ${listText}
 ${dispText}
 
 위 부적합 사항들을 분석하여 다음을 작성해주세요:
+1. 주요 부적합별 해당 행정처분 기준 — 각 항목이 어떤 조항에 해당하는지, 1차~3차 처분 기준
+2. 최대 받을 수 있는 행정처분 — 전체 부적합 중 가장 무거운 처분 기준 요약
+3. 담당자 검토 코멘트 — 즉시 조치 필요 사항, 추가 확인 포인트, 재심사 권고 여부 등
 
-1. **주요 부적합별 해당 행정처분 기준** — 각 항목이 어떤 조항에 해당하는지, 1차~3차 처분 기준
-2. **최대 받을 수 있는 행정처분** — 전체 부적합 중 가장 무거운 처분 기준 요약
-3. **담당자 검토 코멘트** — 즉시 조치 필요 사항, 추가 확인 포인트, 재심사 권고 여부 등
+간결하고 실용적으로 작성하세요. 내부 검토 자료입니다.`};
+}
 
-간결하고 실용적으로 작성하세요. 내부 검토 자료입니다.`;
+async function _copyPromptFallback(prompt){
+  try{await navigator.clipboard.writeText(prompt);}catch(_){}
+  S.dispResult={clipboard:true,prompt:prompt};
+  S.dispLoading=false;render();
+}
+
+async function runDispAnalysis(clType, sections, J, header){
+  const built=_buildDispPrompt(clType,sections,J,header);
+  if(!built){S.dispResult={empty:true};S.dispLoading=false;render();return;}
+  const {prompt}=built;
+
+  /* API 키 없으면 바로 클립보드 복사 모드 */
+  if(!cfg.anthropicKey){
+    await _copyPromptFallback(prompt);
+    return;
+  }
 
   S.dispLoading=true;S.dispResult=null;render();
   try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2048,messages:[{role:"user",content:prompt}]})
-    });
+    const ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),30000);
+    let r;
+    try{
+      r=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2048,messages:[{role:"user",content:prompt}]}),
+        signal:ctrl.signal
+      });
+    }finally{clearTimeout(timer);}
     if(!r.ok){
       let msg="";try{const j=await r.json();msg=j.error?.message||"";}catch(_){}
       throw new Error("HTTP "+r.status+(msg?": "+msg:""));
     }
     const d=await r.json();
     S.dispResult={text:d.content[0].text};
+    S.dispLoading=false;render();
   }catch(e){
-    S.dispResult={error:e.message};
+    /* CORS/네트워크 오류(Failed to fetch) → 클립보드 복사 폴백 */
+    const isCorsErr=(e.name==="TypeError"||e.message==="Failed to fetch"||e.name==="AbortError");
+    if(isCorsErr){
+      await _copyPromptFallback(prompt);
+    }else{
+      S.dispResult={error:e.message};
+      S.dispLoading=false;render();
+    }
   }
-  S.dispLoading=false;render();
 }
 
 function dispAnalysisChecklist(){
@@ -993,27 +1016,34 @@ function dispAnalysisDetail(){
 }
 
 function renderDispositionPanel(isDetail){
-  const hasKey=!!cfg.anthropicKey;
   const btnFn=isDetail?"dispAnalysisDetail()":"dispAnalysisChecklist()";
-  const btnLabel=S.dispLoading?"⏳ 분석 중...":"🔍 AI 행정처분 분석";
+  const hasKey=!!cfg.anthropicKey;
+  const btnLabel=S.dispLoading?"⏳ 분석 중...":(hasKey?"🔍 AI 행정처분 분석":"📋 프롬프트 복사");
   return `<div class="no-print" style="background:#fff8e1;border:2px solid #f9a825;border-radius:11px;margin-top:10px;overflow:hidden">
     <div style="background:#f9a825;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-weight:700;font-size:13px;color:#0f2547">🔍 행정처분 검토 <span style="font-weight:400;font-size:11px">(내부 검토용 · PDF 미출력)</span></span>
-      ${hasKey
-        ?`<button class="btn" style="margin-left:auto;background:#0f2547;color:#fff;font-size:12px;padding:5px 14px;border:none" onclick="${btnFn}" ${S.dispLoading?"disabled":""}">${btnLabel}</button>`
-        :`<span style="margin-left:auto;font-size:11px;color:#c62828;font-weight:600">⚙️ 설정에서 Claude API 키를 먼저 입력하세요</span>`
-      }
+      <button class="btn" style="margin-left:auto;background:#0f2547;color:#fff;font-size:12px;padding:5px 14px;border:none" onclick="${btnFn}" ${S.dispLoading?"disabled":""}>${btnLabel}</button>
     </div>
     <div style="padding:14px 16px;min-height:44px">
       ${S.dispLoading
         ?`<div style="text-align:center;color:#546e7a;font-size:13px">⏳ AI가 행정처분 기준을 분석하고 있습니다...</div>`
         :S.dispResult?.error
-          ?`<div style="color:#c62828;font-size:13px">⚠️ 분석 실패: ${esc(S.dispResult.error)}<br><span style="font-size:11px;color:#78909c">API 키를 확인하거나 잠시 후 재시도하세요.</span></div>`
+          ?`<div style="color:#c62828;font-size:13px">⚠️ 분석 실패: ${esc(S.dispResult.error)}<br><span style="font-size:11px;color:#78909c">잠시 후 재시도하거나 API 키를 확인하세요.</span></div>`
           :S.dispResult?.empty
             ?`<div style="color:#78909c;font-size:13px">※ 부적합·비고 사항이 없어 분석할 내용이 없습니다.</div>`
             :S.dispResult?.text
               ?`<div style="font-size:13px;line-height:1.8;white-space:pre-wrap;color:#1a1a2e">${esc(S.dispResult.text)}</div>`
-              :`<div style="color:#78909c;font-size:12px">위 버튼을 눌러 주요 부적합 사항의 행정처분 기준과 담당자 검토 코멘트를 확인하세요.</div>`
+              :S.dispResult?.clipboard
+                ?`<div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:12px 14px">
+                    <div style="font-weight:600;font-size:13px;color:#1b5e20;margin-bottom:6px">✅ 분석 프롬프트가 클립보드에 복사되었습니다!</div>
+                    <div style="font-size:12px;color:#2e7d32;line-height:1.6">
+                      1. <a href="https://claude.ai" target="_blank" style="color:#1565c0;font-weight:600">claude.ai</a> 를 새 탭에서 열어주세요<br>
+                      2. 채팅창에 <strong>Ctrl+V (붙여넣기)</strong> 하면 분석 결과를 바로 받을 수 있습니다<br>
+                      <span style="color:#78909c;font-size:11px">※ API 직접 호출 대신 클립보드 방식을 사용합니다 (로컬 파일 환경)</span>
+                    </div>
+                    <button class="btn" style="margin-top:8px;background:#1565c0;color:#fff;font-size:11px;padding:4px 12px;border:none" onclick="navigator.clipboard.writeText(S.dispResult.prompt).then(()=>showToast('📋 다시 복사했습니다!'))">📋 다시 복사</button>
+                  </div>`
+                :`<div style="color:#78909c;font-size:12px">${hasKey?"위 버튼을 눌러 AI가 행정처분 기준을 분석합니다.":"⚙️ 설정에서 Claude API Key를 입력하면 AI가 직접 분석합니다. 또는 버튼을 눌러 분석 프롬프트를 클립보드에 복사하세요."}</div>`
       }
     </div>
   </div>`;
