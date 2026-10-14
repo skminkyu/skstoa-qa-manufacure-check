@@ -925,7 +925,9 @@ function _buildDispPrompt(clType, sections, J, header){
   const items=_collectNonConformities(clType,sections,J);
   if(!items.length) return null;
   const ct=TYPES[clType];
-  const dispText=DISP_DATA[clType]||"";
+  const rawDisp=DISP_DATA[clType]||"";
+  /* Vercel 10초 제한 대응: 프롬프트 크기 축소 */
+  const dispText=rawDisp.length>2000?rawDisp.slice(0,2000)+"…(기준 일부 생략)":rawDisp;
   const isBigoOnly=(clType==="hygiene"||clType==="medi_ex");
   const listText=items.map((it,i)=>{
     const base=`${i+1}. [${it.section}]`;
@@ -2804,14 +2806,47 @@ function saveCfgModal(){
 
 async function testConnection(){
   const token=document.getElementById("inp-key").value.trim();
-  if(!token){showToast("⚠️ Token을 입력해주세요.",false);return;}
-  try{
-    const r=await fetch("https://api.github.com/gists/"+GIST_ID,{
-      headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json"}
-    });
-    if(r.ok){showToast("✅ GitHub Gist 연결 성공! 저장 버튼을 클릭해 설정을 저장하세요.");}
-    else{showToast("⚠️ 연결 실패 (HTTP "+r.status+"). Token 또는 Gist ID를 확인해주세요.",false);}
-  }catch(_){showToast("⚠️ 연결 실패. 인터넷 연결을 확인해주세요.",false);}
+  const proxyEl=document.getElementById("inp-proxy");
+  const akEl=document.getElementById("inp-anthropic");
+
+  /* GitHub 테스트 */
+  if(token){
+    try{
+      const r=await fetch("https://api.github.com/gists/"+GIST_ID,{
+        headers:{"Authorization":"Bearer "+token,"Accept":"application/vnd.github+json"}
+      });
+      if(r.ok){showToast("✅ GitHub Gist 연결 성공!");}
+      else{showToast("⚠️ GitHub 연결 실패 (HTTP "+r.status+")",false);}
+    }catch(_){showToast("⚠️ GitHub 연결 실패. 인터넷 확인해주세요.",false);}
+  }
+
+  /* 프록시 테스트 */
+  const pUrl=(proxyEl&&proxyEl.value.trim())||(cfg.proxyUrl||"");
+  const ak=(akEl&&akEl.value.trim())||(cfg.anthropicKey||"");
+  if(pUrl&&ak){
+    showToast("🔄 프록시 연결 테스트 중...");
+    try{
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),12000);
+      const r=await fetch(pUrl.replace(/\/$/,"")+"/api/proxy-claude",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({apiKey:ak,prompt:"ping",model:"claude-sonnet-4-6",max_tokens:5}),
+        signal:ctrl.signal
+      });
+      clearTimeout(t);
+      if(r.ok){showToast("✅ 프록시 연결 성공! 저장 버튼을 눌러 설정을 저장하세요.");}
+      else{
+        let msg="";try{const j=await r.json();msg=j.error?.message||"";}catch(_){}
+        showToast("⚠️ 프록시 응답 오류 HTTP "+r.status+(msg?": "+msg:""),false);
+      }
+    }catch(e){
+      if(e.name==="AbortError"){showToast("⚠️ 프록시 응답 없음 (12초 초과). URL을 확인하세요: "+pUrl,false);}
+      else{showToast("⚠️ 프록시 연결 실패: "+e.message,false);}
+    }
+  }else if(!token){
+    showToast("⚠️ Token 또는 프록시 URL+API키를 입력해주세요.",false);
+  }
 }
 
 
