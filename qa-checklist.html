@@ -980,7 +980,7 @@ async function runDispAnalysis(clType, sections, J, header){
         r=await fetch(cfg.proxyUrl.replace(/\/$/,"")+"/api/proxy-claude",{
           method:"POST",
           headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({apiKey:cfg.anthropicKey,prompt,model:"claude-sonnet-4-6",max_tokens:800}),
+          body:JSON.stringify({apiKey:cfg.anthropicKey,prompt,model:"claude-sonnet-4-6",max_tokens:1200}),
           signal:ctrl.signal
         });
       }else{
