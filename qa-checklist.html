@@ -682,10 +682,10 @@ const GIST_FILE="qa_records.json";
 const JSONBIN_CFG={masterKey:"$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q",binId:"69dc4fd236566621a8a84940"};
 /* 기본 토큰: 분할 저장 (GitHub 스캐너 우회) */
 const _DT=["ghp_osEN8dm","CL2fmLQ8lcs","HG5R6ZEhRI","Xa3vtbss"].join("");
-let cfg={githubToken:"",anthropicKey:""};
+let cfg={githubToken:"",anthropicKey:"",proxyUrl:""};
 try{
   const s=localStorage.getItem(CFG_KEY);
-  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||_DT;cfg.anthropicKey=parsed.anthropicKey||"";}
+  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||_DT;cfg.anthropicKey=parsed.anthropicKey||"";cfg.proxyUrl=parsed.proxyUrl||"";}
   else{cfg.githubToken=_DT;}
 }catch(_){cfg.githubToken=_DT;}
 
@@ -979,23 +979,36 @@ async function runDispAnalysis(clType, sections, J, header){
     const timer=setTimeout(()=>ctrl.abort(),30000);
     let r;
     try{
-      r=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2048,messages:[{role:"user",content:prompt}]}),
-        signal:ctrl.signal
-      });
+      if(cfg.proxyUrl){
+        /* 프록시 서버 경유 (CORS 해결) */
+        r=await fetch(cfg.proxyUrl.replace(/\/$/,"")+"/api/proxy-claude",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({apiKey:cfg.anthropicKey,prompt,model:"claude-sonnet-4-6",max_tokens:2048}),
+          signal:ctrl.signal
+        });
+      }else{
+        /* 직접 호출 시도 (http://localhost 또는 배포 환경에서 동작) */
+        r=await fetch("https://api.anthropic.com/v1/messages",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
+          body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2048,messages:[{role:"user",content:prompt}]}),
+          signal:ctrl.signal
+        });
+      }
     }finally{clearTimeout(timer);}
     if(!r.ok){
-      let msg="";try{const j=await r.json();msg=j.error?.message||"";}catch(_){}
+      let msg="";try{const j=await r.json();msg=j.error?.message||j.error||"";}catch(_){}
       throw new Error("HTTP "+r.status+(msg?": "+msg:""));
     }
     const d=await r.json();
-    S.dispResult={text:d.content[0].text};
+    /* 프록시는 Anthropic 원본 응답, 직접 호출도 동일 구조 */
+    const text=d.content?.[0]?.text||d.text||"";
+    S.dispResult={text};
     S.dispLoading=false;render();
   }catch(e){
     /* CORS/네트워크 오류(Failed to fetch) → 클립보드 복사 폴백 */
-    const isCorsErr=(e.name==="TypeError"||e.message==="Failed to fetch"||e.name==="AbortError");
+    const isCorsErr=(e.name==="TypeError"||e.message==="Failed to fetch");
     if(isCorsErr){
       await _copyPromptFallback(prompt);
     }else{
@@ -1043,7 +1056,7 @@ function renderDispositionPanel(isDetail){
                     </div>
                     <button class="btn" style="margin-top:8px;background:#1565c0;color:#fff;font-size:11px;padding:4px 12px;border:none" onclick="navigator.clipboard.writeText(S.dispResult.prompt).then(()=>showToast('📋 다시 복사했습니다!'))">📋 다시 복사</button>
                   </div>`
-                :`<div style="color:#78909c;font-size:12px">${hasKey?"위 버튼을 눌러 AI가 행정처분 기준을 분석합니다.":"⚙️ 설정에서 Claude API Key를 입력하면 AI가 직접 분석합니다. 또는 버튼을 눌러 분석 프롬프트를 클립보드에 복사하세요."}</div>`
+                :`<div style="color:#78909c;font-size:12px">${cfg.proxyUrl&&hasKey?"위 버튼을 눌러 AI가 행정처분 기준을 바로 분석합니다.":!cfg.proxyUrl?"⚙️ 설정에서 <b>AI 프록시 서버 URL</b>과 Claude API Key를 입력하면 앱 내 직접 분석이 가능합니다.<br>지금은 버튼을 눌러 클립보드 복사 방식으로 사용하세요.":"⚙️ 설정에서 Claude API Key를 입력하세요."}</div>`
       }
     </div>
   </div>`;
@@ -1699,9 +1712,13 @@ function render(){
           <input id="inp-key" type="password" value="${esc(cfg.githubToken)}" placeholder="ghp_..."/>
         </div>
         <div class="ff" style="margin-top:10px">
-          <label>Claude API Key <span style="font-size:10px;color:#78909c;font-weight:400">(행정처분 AI 분석 기능용 · 선택)</span></label>
+          <label>Claude API Key <span style="font-size:10px;color:#78909c;font-weight:400">(행정처분 AI 분석 기능용)</span></label>
           <input id="inp-anthropic" type="password" value="${esc(cfg.anthropicKey)}" placeholder="sk-ant-..."/>
-          <span style="font-size:11px;color:#90a4ae;margin-top:3px">키는 이 기기 브라우저에만 저장되며 외부로 전송되지 않습니다.</span>
+        </div>
+        <div class="ff" style="margin-top:10px">
+          <label>AI 프록시 서버 URL <span style="font-size:10px;color:#78909c;font-weight:400">(law-check Vercel 배포 URL · 필수)</span></label>
+          <input id="inp-proxy" type="text" value="${esc(cfg.proxyUrl)}" placeholder="https://your-law-check.vercel.app"/>
+          <span style="font-size:11px;color:#90a4ae;margin-top:3px">law-check 앱을 Vercel에 배포 후 URL을 입력하면 앱 내에서 바로 분석됩니다.</span>
         </div>
         <div class="modal-btns">
           <button class="btn btn-ol" onclick="closeModal()">취소</button>
@@ -2770,6 +2787,8 @@ function saveCfgModal(){
   cfg.githubToken=document.getElementById("inp-key").value.trim();
   const ak=document.getElementById("inp-anthropic");
   if(ak) cfg.anthropicKey=ak.value.trim();
+  const px=document.getElementById("inp-proxy");
+  if(px) cfg.proxyUrl=px.value.trim();
   saveCfg();
   S.showModal=false;
   render();
