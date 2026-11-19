@@ -682,10 +682,10 @@ const GIST_FILE="qa_records.json";
 const JSONBIN_CFG={masterKey:"$2a$10$nRgkgOlPM8u47NNvK1.g7O4XWI377TT.gRNNSh1LEnK.ChqmzZS4q",binId:"69dc4fd236566621a8a84940"};
 /* 기본 토큰: 분할 저장 (GitHub 스캐너 우회) */
 const _DT=["ghp_osEN8dm","CL2fmLQ8lcs","HG5R6ZEhRI","Xa3vtbss"].join("");
-let cfg={githubToken:"",anthropicKey:"",proxyUrl:""};
+let cfg={githubToken:"",anthropicKey:"",proxyUrl:"",groqKey:""};
 try{
   const s=localStorage.getItem(CFG_KEY);
-  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||_DT;cfg.anthropicKey=parsed.anthropicKey||"";cfg.proxyUrl=parsed.proxyUrl||"";}
+  if(s){const parsed=JSON.parse(s);cfg.githubToken=parsed.githubToken||_DT;cfg.anthropicKey=parsed.anthropicKey||"";cfg.proxyUrl=parsed.proxyUrl||"";cfg.groqKey=parsed.groqKey||"";}
   else{cfg.githubToken=_DT;}
 }catch(_){cfg.githubToken=_DT;}
 
@@ -963,8 +963,8 @@ async function runDispAnalysis(clType, sections, J, header){
   if(!built){S.dispResult={empty:true};S.dispLoading=false;render();return;}
   const {prompt}=built;
 
-  /* API 키 없으면 바로 클립보드 복사 모드 */
-  if(!cfg.anthropicKey){
+  /* Groq API 키 없으면 클립보드 복사 모드 */
+  if(!cfg.groqKey){
     await _copyPromptFallback(prompt);
     return;
   }
@@ -975,48 +975,31 @@ async function runDispAnalysis(clType, sections, J, header){
     const timer=setTimeout(()=>ctrl.abort(),30000);
     let r;
     try{
-      if(cfg.proxyUrl){
-        /* 프록시 서버 경유 (CORS 해결) */
-        r=await fetch(cfg.proxyUrl.replace(/\/$/,"")+"/api/proxy-claude",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({apiKey:cfg.anthropicKey,prompt,model:"claude-sonnet-4-6",max_tokens:1200}),
-          signal:ctrl.signal
-        });
-      }else{
-        /* 직접 호출 시도 (http://localhost 또는 배포 환경에서 동작) */
-        r=await fetch("https://api.anthropic.com/v1/messages",{
-          method:"POST",
-          headers:{"Content-Type":"application/json","x-api-key":cfg.anthropicKey,"anthropic-version":"2023-06-01","anthropic-dangerous-allow-browser":"true"},
-          body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:2048,messages:[{role:"user",content:prompt}]}),
-          signal:ctrl.signal
-        });
-      }
+      /* Groq API 직접 호출 (CORS 허용, 프록시 불필요) */
+      r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+cfg.groqKey},
+        body:JSON.stringify({model:"llama-3.3-70b-versatile",max_tokens:1200,messages:[{role:"user",content:prompt}]}),
+        signal:ctrl.signal
+      });
     }finally{clearTimeout(timer);}
     if(!r.ok){
       let msg="";try{const j=await r.json();msg=j.error?.message||j.error||"";}catch(_){}
       throw new Error("HTTP "+r.status+(msg?": "+msg:""));
     }
     const d=await r.json();
-    /* 프록시는 Anthropic 원본 응답, 직접 호출도 동일 구조 */
-    const text=d.content?.[0]?.text||d.text||"";
+    const text=d.choices?.[0]?.message?.content||"";
     S.dispResult={text};
     S.dispLoading=false;render();
   }catch(e){
     /* AbortError → 타임아웃 */
     if(e.name==="AbortError"){
-      const url=cfg.proxyUrl?(cfg.proxyUrl.replace(/\/$/,"")+"/api/proxy-claude"):"api.anthropic.com";
-      S.dispResult={error:"요청 시간 초과 (30초). 프록시 URL을 확인하세요: "+url};
+      S.dispResult={error:"요청 시간 초과 (30초). Groq API Key를 확인하세요."};
       S.dispLoading=false;render();
       return;
     }
-    /* CORS/네트워크 오류(Failed to fetch) → 클립보드 복사 폴백 */
-    const isCorsErr=(e.name==="TypeError"||e.message==="Failed to fetch");
-    if(isCorsErr){
-      await _copyPromptFallback(prompt);
-    }else{
-      S.dispResult={error:e.message};
-      S.dispLoading=false;render();
+    S.dispResult={error:e.message};
+    S.dispLoading=false;render();
     }
   }
 }
@@ -1033,7 +1016,7 @@ function dispAnalysisDetail(){
 
 function renderDispositionPanel(isDetail){
   const btnFn=isDetail?"dispAnalysisDetail()":"dispAnalysisChecklist()";
-  const hasKey=!!cfg.anthropicKey;
+  const hasKey=!!cfg.groqKey;
   const btnLabel=S.dispLoading?"⏳ 분석 중...":(hasKey?"🔍 AI 행정처분 분석":"📋 프롬프트 복사");
   return `<div class="no-print" style="background:#fff8e1;border:2px solid #f9a825;border-radius:11px;margin-top:10px;overflow:hidden">
     <div style="background:#f9a825;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -1059,7 +1042,7 @@ function renderDispositionPanel(isDetail){
                     </div>
                     <button class="btn" style="margin-top:8px;background:#1565c0;color:#fff;font-size:11px;padding:4px 12px;border:none" onclick="navigator.clipboard.writeText(S.dispResult.prompt).then(()=>showToast('📋 다시 복사했습니다!'))">📋 다시 복사</button>
                   </div>`
-                :`<div style="color:#78909c;font-size:12px">${cfg.proxyUrl&&hasKey?"위 버튼을 눌러 AI가 행정처분 기준을 바로 분석합니다.":!cfg.proxyUrl?"⚙️ 설정에서 <b>AI 프록시 서버 URL</b>과 Claude API Key를 입력하면 앱 내 직접 분석이 가능합니다.<br>지금은 버튼을 눌러 클립보드 복사 방식으로 사용하세요.":"⚙️ 설정에서 Claude API Key를 입력하세요."}</div>`
+                :`<div style="color:#78909c;font-size:12px">${hasKey?"위 버튼을 눌러 AI가 행정처분 기준을 바로 분석합니다.":"⚙️ 설정에서 <b>Groq API Key</b>를 입력하면 앱 내 직접 분석이 가능합니다.<br>지금은 버튼을 눌러 클립보드 복사 방식으로 사용하세요."}</div>`
       }
     </div>
   </div>`;
@@ -1715,13 +1698,9 @@ function render(){
           <input id="inp-key" type="password" value="${esc(cfg.githubToken)}" placeholder="ghp_..."/>
         </div>
         <div class="ff" style="margin-top:10px">
-          <label>Claude API Key <span style="font-size:10px;color:#78909c;font-weight:400">(행정처분 AI 분석 기능용)</span></label>
-          <input id="inp-anthropic" type="password" value="${esc(cfg.anthropicKey)}" placeholder="sk-ant-..."/>
-        </div>
-        <div class="ff" style="margin-top:10px">
-          <label>AI 프록시 서버 URL <span style="font-size:10px;color:#78909c;font-weight:400">(law-check Vercel 배포 URL · 필수)</span></label>
-          <input id="inp-proxy" type="text" value="${esc(cfg.proxyUrl)}" placeholder="https://your-law-check.vercel.app"/>
-          <span style="font-size:11px;color:#90a4ae;margin-top:3px">law-check 앱을 Vercel에 배포 후 URL을 입력하면 앱 내에서 바로 분석됩니다.</span>
+          <label>Groq API Key <span style="font-size:10px;color:#78909c;font-weight:400">(행정처분 AI 분석 기능용 · 무료)</span></label>
+          <input id="inp-groq" type="password" value="${esc(cfg.groqKey)}" placeholder="gsk_..."/>
+          <span style="font-size:11px;color:#90a4ae;margin-top:3px">console.groq.com에서 무료 발급 · 프록시 서버 불필요</span>
         </div>
         <div class="modal-btns">
           <button class="btn btn-ol" onclick="closeModal()">취소</button>
@@ -2792,6 +2771,8 @@ function saveCfgModal(){
   if(ak) cfg.anthropicKey=ak.value.trim();
   const px=document.getElementById("inp-proxy");
   if(px) cfg.proxyUrl=px.value.trim();
+  const gk=document.getElementById("inp-groq");
+  if(gk) cfg.groqKey=gk.value.trim();
   saveCfg();
   S.showModal=false;
   render();
@@ -2800,8 +2781,8 @@ function saveCfgModal(){
 
 async function testConnection(){
   const token=document.getElementById("inp-key").value.trim();
-  const proxyEl=document.getElementById("inp-proxy");
-  const akEl=document.getElementById("inp-anthropic");
+  const groqEl=document.getElementById("inp-groq");
+  const groqKey=(groqEl&&groqEl.value.trim())||(cfg.groqKey||"");
 
   /* GitHub 테스트 */
   if(token){
@@ -2814,32 +2795,30 @@ async function testConnection(){
     }catch(_){showToast("⚠️ GitHub 연결 실패. 인터넷 확인해주세요.",false);}
   }
 
-  /* 프록시 테스트 */
-  const pUrl=(proxyEl&&proxyEl.value.trim())||(cfg.proxyUrl||"");
-  const ak=(akEl&&akEl.value.trim())||(cfg.anthropicKey||"");
-  if(pUrl&&ak){
-    showToast("🔄 프록시 연결 테스트 중...");
+  /* Groq API 테스트 */
+  if(groqKey){
+    showToast("🔄 Groq API 연결 테스트 중...");
     try{
       const ctrl=new AbortController();
       const t=setTimeout(()=>ctrl.abort(),12000);
-      const r=await fetch(pUrl.replace(/\/$/,"")+"/api/proxy-claude",{
+      const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({apiKey:ak,prompt:"ping",model:"claude-sonnet-4-6",max_tokens:5}),
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+groqKey},
+        body:JSON.stringify({model:"llama-3.3-70b-versatile",max_tokens:5,messages:[{role:"user",content:"hi"}]}),
         signal:ctrl.signal
       });
       clearTimeout(t);
-      if(r.ok){showToast("✅ 프록시 연결 성공! 저장 버튼을 눌러 설정을 저장하세요.");}
+      if(r.ok){showToast("✅ Groq API 연결 성공! 저장 버튼을 눌러 설정을 저장하세요.");}
       else{
         let msg="";try{const j=await r.json();msg=j.error?.message||"";}catch(_){}
-        showToast("⚠️ 프록시 응답 오류 HTTP "+r.status+(msg?": "+msg:""),false);
+        showToast("⚠️ Groq API 오류 HTTP "+r.status+(msg?": "+msg:""),false);
       }
     }catch(e){
-      if(e.name==="AbortError"){showToast("⚠️ 프록시 응답 없음 (12초 초과). URL을 확인하세요: "+pUrl,false);}
-      else{showToast("⚠️ 프록시 연결 실패: "+e.message,false);}
+      if(e.name==="AbortError"){showToast("⚠️ Groq API 응답 없음 (12초 초과)",false);}
+      else{showToast("⚠️ Groq API 연결 실패: "+e.message,false);}
     }
   }else if(!token){
-    showToast("⚠️ Token 또는 프록시 URL+API키를 입력해주세요.",false);
+    showToast("⚠️ Token 또는 Groq API Key를 입력해주세요.",false);
   }
 }
 
