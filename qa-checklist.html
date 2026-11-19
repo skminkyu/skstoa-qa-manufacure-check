@@ -975,11 +975,12 @@ async function runDispAnalysis(clType, sections, J, header){
     const timer=setTimeout(()=>ctrl.abort(),30000);
     let r;
     try{
-      /* Groq API 직접 호출 (CORS 허용, 프록시 불필요) */
-      r=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+      /* Groq API — 프록시 경유 (file:// CORS 우회) */
+      const proxyBase=(cfg.proxyUrl||"https://law-check-woad.vercel.app").replace(/\/$/,"");
+      r=await fetch(proxyBase+"/api/proxy-claude",{
         method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+cfg.groqKey},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile",max_tokens:1200,messages:[{role:"user",content:prompt}]}),
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({apiKey:cfg.groqKey,prompt,max_tokens:1200}),
         signal:ctrl.signal
       });
     }finally{clearTimeout(timer);}
