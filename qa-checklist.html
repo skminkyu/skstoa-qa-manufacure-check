@@ -1483,7 +1483,7 @@ function render(){
       </div>`:""}
       ${renderPhotoSection(S.photos,false)}
       ${renderPdfSection(S.pdfs,false)}
-      ${S.clType==="cgmp"?renderCgmpRefBox():""}
+      ${renderCgmpRefBox()}
       ${renderPhotoPrint(S.photos)}
     </div>`;
   }
@@ -1701,7 +1701,7 @@ function render(){
       </div>`}
       ${renderPhotoSection(rec.photos||[],true)}
       ${renderPdfSection(rec.pdfs||[],true)}
-      ${rec.clType==="cgmp"?renderCgmpRefBox():""}
+      ${renderCgmpRefBox()}
       ${renderPhotoPrint(rec.photos||[])}
     </div>`;
   }
