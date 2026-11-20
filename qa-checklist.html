@@ -944,15 +944,17 @@ ${listText}
 [행정처분기준]
 ${dispText}
 
-위 부적합 사항들을 종합했을 때, 1차 위반 기준으로 받을 수 있는 최대 행정처분이 무엇인지 알려줘.
+위 부적합 사항들을 종합하여, 1차 위반 기준으로 최종적으로 받게 될 행정처분을 알려줘.
 
 출력 형식:
-| 부적합 항목 | 해당 조항/기준 | 1차 처분 |
-(표로 정리)
+✅ 최종 행정처분: [처분명]
 
-마지막에 한 줄로: "→ 1차 기준 최대 처분: OOO"
+■ 해당 부적합 항목 및 근거
+1. [부적합 항목명] — [조항/기준]
+2. [부적합 항목명] — [조항/기준]
+(전체 항목 모두 나열)
 
-간결하게.`};
+※ [처분 적용 근거 한 줄 설명]`};
 }
 
 async function _copyPromptFallback(prompt){
@@ -983,7 +985,7 @@ async function runDispAnalysis(clType, sections, J, header){
       r=await fetch(proxyBase+"/api/proxy-claude",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({apiKey:cfg.groqKey,prompt,max_tokens:1200}),
+        body:JSON.stringify({apiKey:cfg.groqKey,prompt,max_tokens:1500}),
         signal:ctrl.signal
       });
     }finally{clearTimeout(timer);}
